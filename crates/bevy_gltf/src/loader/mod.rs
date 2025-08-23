@@ -45,6 +45,7 @@ use bevy_scene::Scene;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_tasks::IoTaskPool;
 use bevy_transform::components::Transform;
+use std::ops::Mul;
 
 use gltf::{
     accessor::Iter,
@@ -178,6 +179,7 @@ pub struct GltfLoader {
 /// );
 /// ```
 #[derive(Serialize, Deserialize)]
+#[serde(default)]
 pub struct GltfLoaderSettings {
     /// If empty, the gltf mesh nodes will be skipped.
     ///
@@ -216,6 +218,34 @@ pub struct GltfLoaderSettings {
     ///
     /// If `None`, uses the global default set by [`GltfPlugin::use_model_forward_direction`](crate::GltfPlugin::use_model_forward_direction).
     pub use_model_forward_direction: Option<bool>,
+    /// How to import animations
+    pub animations: GltfAnimationSettings,
+}
+/// Animation settings
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct GltfAnimationSettings {
+    /// How to process root motion
+    pub root_motion: RootMotion,
+}
+
+/// How to process root motion
+#[derive(Serialize, Deserialize, Default)]
+pub enum RootMotion {
+    /// Keep the curve as in the Gltf file
+    #[default]
+    AsIs,
+    /// Zeroe selected axis in the curve
+    Zeroe(RootMotionAxis),
+}
+
+bitflags::bitflags! {
+    #[derive(Serialize, Deserialize)]
+    pub struct RootMotionAxis: u8 {
+        const X = 1;
+        const Y = 1 << 1;
+        const Z = 1 << 2;
+    }
 }
 
 impl Default for GltfLoaderSettings {
@@ -230,6 +260,7 @@ impl Default for GltfLoaderSettings {
             default_sampler: None,
             override_sampler: false,
             use_model_forward_direction: None,
+            animations: Default::default(),
         }
     }
 }
@@ -328,6 +359,10 @@ impl GltfLoader {
                                             verts
                                         }
                                     })
+                                    .map(
+                                        get_translation_curve_post_process(settings, &node, &paths)
+                                            .unwrap_or(|v| v),
+                                    )
                                     .collect();
                                 if keyframe_timestamps.len() == 1 {
                                     Some(VariableCurve::new(AnimatableCurve::new(
@@ -339,6 +374,35 @@ impl GltfLoader {
                                         gltf::animation::Interpolation::Linear => {
                                             UnevenSampleAutoCurve::new(
                                                 keyframe_timestamps.into_iter().zip(translations),
+                                            )
+                                            .ok()
+                                            .map(
+                                                |curve| {
+                                                    VariableCurve::new(AnimatableCurve::new(
+                                                        translation_property,
+                                                        curve,
+                                                    ))
+                                                },
+                                            )
+                                        }
+                                        gltf::animation::Interpolation::Step => {
+                                            SteppedKeyframeCurve::new(
+                                                keyframe_timestamps.into_iter().zip(translations),
+                                            )
+                                            .ok()
+                                            .map(
+                                                |curve| {
+                                                    VariableCurve::new(AnimatableCurve::new(
+                                                        translation_property,
+                                                        curve,
+                                                    ))
+                                                },
+                                            )
+                                        }
+                                        gltf::animation::Interpolation::CubicSpline => {
+                                            CubicKeyframeCurve::new(
+                                                keyframe_timestamps,
+                                                translations,
                                             )
                                             .ok()
                                             .map(
@@ -1071,6 +1135,47 @@ impl AssetLoader for GltfLoader {
 
     fn extensions(&self) -> &[&str] {
         &["gltf", "glb"]
+    }
+}
+
+/// Find the appropriate post process to apply to the values of a translation curve
+///
+/// Useful to filter out some value for root motion
+#[cfg(feature = "bevy_animation")]
+fn get_translation_curve_post_process<T>(
+    settings: &GltfLoaderSettings,
+    node: &Node,
+    paths: &HashMap<usize, (usize, Vec<T>)>,
+) -> Option<impl FnMut(Vec3) -> Vec3> {
+    match &settings.animations.root_motion {
+        RootMotion::AsIs => None,
+        RootMotion::Zeroe(axes) => {
+            let Some((_, path)) = paths.get(&node.index()) else {
+                return None;
+            };
+            if path.len() != 2 {
+                return None;
+            }
+
+            let filter = Vec3::new(
+                if axes.contains(RootMotionAxis::X) {
+                    0.0
+                } else {
+                    1.0
+                },
+                if axes.contains(RootMotionAxis::Y) {
+                    0.0
+                } else {
+                    1.0
+                },
+                if axes.contains(RootMotionAxis::Z) {
+                    0.0
+                } else {
+                    1.0
+                },
+            );
+            Some(move |v: Vec3| v.mul(filter))
+        }
     }
 }
 
