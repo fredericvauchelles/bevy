@@ -47,6 +47,7 @@ use bevy_scene::Scene;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_tasks::IoTaskPool;
 use bevy_transform::components::Transform;
+use std::ops::Mul;
 
 use gltf::{
     accessor::Iter,
@@ -166,6 +167,7 @@ pub struct GltfLoader {
 /// );
 /// ```
 #[derive(Serialize, Deserialize)]
+#[serde(default)]
 pub struct GltfLoaderSettings {
     /// If empty, the gltf mesh nodes will be skipped.
     ///
@@ -181,6 +183,34 @@ pub struct GltfLoaderSettings {
     pub load_lights: bool,
     /// If true, the loader will include the root of the gltf root node.
     pub include_source: bool,
+    /// How to import animations
+    pub animations: GltfAnimationSettings,
+}
+/// Animation settings
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct GltfAnimationSettings {
+    /// How to process root motion
+    pub root_motion: RootMotion,
+}
+
+/// How to process root motion
+#[derive(Serialize, Deserialize, Default)]
+pub enum RootMotion {
+    /// Keep the curve as in the Gltf file
+    #[default]
+    AsIs,
+    /// Zeroe selected axis in the curve
+    Zeroe(RootMotionAxis),
+}
+
+bitflags::bitflags! {
+    #[derive(Serialize, Deserialize)]
+    pub struct RootMotionAxis: u8 {
+        const X = 1;
+        const Y = 1 << 1;
+        const Z = 1 << 2;
+    }
 }
 
 impl Default for GltfLoaderSettings {
@@ -191,6 +221,7 @@ impl Default for GltfLoaderSettings {
             load_cameras: true,
             load_lights: true,
             include_source: false,
+            animations: Default::default(),
         }
     }
 }
@@ -291,7 +322,13 @@ async fn load_gltf<'a, 'b, 'c>(
                     match outputs {
                         ReadOutputs::Translations(tr) => {
                             let translation_property = animated_field!(Transform::translation);
-                            let translations: Vec<Vec3> = tr.map(Vec3::from).collect();
+                            let translations: Vec<Vec3> = if let Some(post_process) =
+                                get_translation_curve_post_process(settings, &node, &paths)
+                            {
+                                tr.map(Vec3::from).map(post_process).collect()
+                            } else {
+                                tr.map(Vec3::from).collect()
+                            };
                             if keyframe_timestamps.len() == 1 {
                                 Some(VariableCurve::new(AnimatableCurve::new(
                                     translation_property,
@@ -949,6 +986,47 @@ async fn load_gltf<'a, 'b, 'c>(
             None
         },
     })
+}
+
+/// Find the appropriate post process to apply to the values of a translation curve
+///
+/// Useful to filter out some value for root motion
+#[cfg(feature = "bevy_animation")]
+fn get_translation_curve_post_process<T>(
+    settings: &GltfLoaderSettings,
+    node: &Node,
+    paths: &HashMap<usize, (usize, Vec<T>)>,
+) -> Option<impl FnMut(Vec3) -> Vec3> {
+    match &settings.animations.root_motion {
+        RootMotion::AsIs => None,
+        RootMotion::Zeroe(axes) => {
+            let Some((_, path)) = paths.get(&node.index()) else {
+                return None;
+            };
+            if path.len() != 2 {
+                return None;
+            }
+
+            let filter = Vec3::new(
+                if axes.contains(RootMotionAxis::X) {
+                    0.0
+                } else {
+                    1.0
+                },
+                if axes.contains(RootMotionAxis::Y) {
+                    0.0
+                } else {
+                    1.0
+                },
+                if axes.contains(RootMotionAxis::Z) {
+                    0.0
+                } else {
+                    1.0
+                },
+            );
+            Some(move |v: Vec3| v.mul(filter))
+        }
+    }
 }
 
 /// Loads a glTF texture as a bevy [`Image`] and returns it together with its label.
