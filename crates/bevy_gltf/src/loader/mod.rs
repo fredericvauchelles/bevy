@@ -350,20 +350,21 @@ impl GltfLoader {
                         match outputs {
                             ReadOutputs::Translations(tr) => {
                                 let translation_property = animated_field!(Transform::translation);
-                                let translations: Vec<Vec3> = tr
-                                    .map(Vec3::from)
-                                    .map(|verts| {
-                                        if convert_coordinates {
-                                            Vec3::convert_coordinates(verts)
-                                        } else {
-                                            verts
-                                        }
-                                    })
-                                    .map(
-                                        get_translation_curve_post_process(settings, &node, &paths)
-                                            .unwrap_or(|v| v),
-                                    )
-                                    .collect();
+                                let translations = tr.map(Vec3::from).map(|verts| {
+                                    if convert_coordinates {
+                                        Vec3::convert_coordinates(verts)
+                                    } else {
+                                        verts
+                                    }
+                                });
+                                let translations: Vec<Vec3> = if let Some(post_process) =
+                                    get_translation_curve_post_process(settings, &node, &paths)
+                                {
+                                    translations.map(post_process).collect()
+                                } else {
+                                    translations.collect()
+                                };
+
                                 if keyframe_timestamps.len() == 1 {
                                     Some(VariableCurve::new(AnimatableCurve::new(
                                         translation_property,
@@ -374,35 +375,6 @@ impl GltfLoader {
                                         gltf::animation::Interpolation::Linear => {
                                             UnevenSampleAutoCurve::new(
                                                 keyframe_timestamps.into_iter().zip(translations),
-                                            )
-                                            .ok()
-                                            .map(
-                                                |curve| {
-                                                    VariableCurve::new(AnimatableCurve::new(
-                                                        translation_property,
-                                                        curve,
-                                                    ))
-                                                },
-                                            )
-                                        }
-                                        gltf::animation::Interpolation::Step => {
-                                            SteppedKeyframeCurve::new(
-                                                keyframe_timestamps.into_iter().zip(translations),
-                                            )
-                                            .ok()
-                                            .map(
-                                                |curve| {
-                                                    VariableCurve::new(AnimatableCurve::new(
-                                                        translation_property,
-                                                        curve,
-                                                    ))
-                                                },
-                                            )
-                                        }
-                                        gltf::animation::Interpolation::CubicSpline => {
-                                            CubicKeyframeCurve::new(
-                                                keyframe_timestamps,
-                                                translations,
                                             )
                                             .ok()
                                             .map(
