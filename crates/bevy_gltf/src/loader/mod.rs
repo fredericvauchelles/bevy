@@ -240,10 +240,14 @@ pub enum RootMotion {
 }
 
 bitflags::bitflags! {
+    /// Which axis should be zeroed when processing root motions
     #[derive(Serialize, Deserialize)]
     pub struct RootMotionAxis: u8 {
+        /// Zeroe the X axis
         const X = 1;
+        /// Zeroe the Y axis
         const Y = 1 << 1;
+        /// Zeroe the Z axis
         const Z = 1 << 2;
     }
 }
