@@ -8,6 +8,7 @@ use bevy_platform::collections::hash_map::Entry;
 use bevy_utils::TypeIdMap;
 use core::any::TypeId;
 use log::{debug, warn};
+use std::any::Any;
 
 /// A macro for generating a well-documented [`PluginGroup`] from a list of [`Plugin`] paths.
 ///
@@ -540,8 +541,32 @@ impl From<PluginGroupBuilder> for Vec<Box<dyn Plugin>> {
         value
             .order
             .into_iter()
-            .map(move |type_id| value.plugins.remove(&type_id).unwrap().plugin)
+            .filter_map(move |type_id| {
+                let entry = value.plugins.remove(&type_id).unwrap();
+                if entry.enabled {
+                    Some(entry.plugin)
+                } else {
+                    None
+                }
+            })
             .collect()
+    }
+}
+
+impl Extend<Box<dyn Plugin>> for PluginGroupBuilder {
+    fn extend<T: IntoIterator<Item = Box<dyn Plugin>>>(&mut self, iter: T) {
+        for plugin in iter {
+            let target_index = self.order.len();
+            self.order.push(plugin.type_id());
+            self.upsert_plugin_entry_state(
+                plugin.type_id(),
+                PluginEntry {
+                    plugin,
+                    enabled: true,
+                },
+                target_index,
+            );
+        }
     }
 }
 

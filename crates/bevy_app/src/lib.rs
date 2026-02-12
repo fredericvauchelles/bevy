@@ -26,6 +26,7 @@ mod main_schedule;
 mod panic_handler;
 mod plugin;
 mod plugin_group;
+mod plugin_type_id;
 mod propagate;
 mod schedule_runner;
 mod sub_app;
@@ -35,7 +36,6 @@ mod terminal_ctrl_c_handler;
 
 #[cfg(feature = "hotpatching")]
 pub mod hotpatch;
-mod plugin_type_id;
 
 pub use app::*;
 pub use hierarchy::*;
