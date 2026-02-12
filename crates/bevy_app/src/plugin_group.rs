@@ -535,6 +535,16 @@ impl PluginGroupBuilder {
     }
 }
 
+impl From<PluginGroupBuilder> for Vec<Box<dyn Plugin>> {
+    fn from(mut value: PluginGroupBuilder) -> Self {
+        value
+            .order
+            .into_iter()
+            .map(move |type_id| value.plugins.remove(&type_id).unwrap().plugin)
+            .collect()
+    }
+}
+
 /// A plugin group which doesn't do anything. Useful for examples:
 /// ```
 /// # use bevy_app::prelude::*;

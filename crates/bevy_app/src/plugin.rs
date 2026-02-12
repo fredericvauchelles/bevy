@@ -1,4 +1,5 @@
 use crate::App;
+use bevy_app::PluginTypeId;
 use core::any::Any;
 use downcast_rs::{impl_downcast, Downcast};
 
@@ -89,6 +90,11 @@ pub trait Plugin: Downcast + Any + Send + Sync {
     fn is_unique(&self) -> bool {
         true
     }
+
+    /// This plugin assumes that these plugins are added before this one
+    fn depends_on(&self) -> alloc::vec::Vec<PluginTypeId> {
+        alloc::vec::Vec::new()
+    }
 }
 
 impl_downcast!(Plugin);
@@ -123,18 +129,33 @@ impl Plugin for PlaceholderPlugin {
 ///
 /// This is implemented for all types which implement [`Plugin`],
 /// [`PluginGroup`](super::PluginGroup), and tuples over [`Plugins`].
-pub trait Plugins<Marker>: sealed::Plugins<Marker> {}
+pub trait Plugins<Marker>: sealed::Plugins<Marker> {
+    fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
+    fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>>;
+}
 
-impl<Marker, T> Plugins<Marker> for T where T: sealed::Plugins<Marker> {}
+impl<Marker, T> Plugins<Marker> for T
+where
+    T: sealed::Plugins<Marker>,
+{
+    fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+        <Self as sealed::Plugins<Marker>>::plugin_type_ids(self)
+    }
+    fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>> {
+        <Self as sealed::Plugins<Marker>>::into_boxed_vec(self)
+    }
+}
 
 mod sealed {
-    use alloc::boxed::Box;
-    use variadics_please::all_tuples;
-
     use crate::{App, AppError, Plugin, PluginGroup};
+    use alloc::boxed::Box;
+    use bevy_app::PluginTypeId;
+    use variadics_please::all_tuples;
 
     pub trait Plugins<Marker> {
         fn add_to_app(self, app: &mut App);
+        fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
+        fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>>;
     }
 
     pub struct PluginMarker;
@@ -152,17 +173,34 @@ mod sealed {
                 )
             }
         }
+        fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+            alloc::vec![PluginTypeId::of::<P>()]
+        }
+        fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
+            alloc::vec![Box::new(self)]
+        }
     }
 
-    impl<P: PluginGroup> Plugins<PluginGroupMarker> for P {
+    impl<P: PluginGroup + Clone> Plugins<PluginGroupMarker> for P {
         #[track_caller]
         fn add_to_app(self, app: &mut App) {
             self.build().finish(app);
         }
+
+        fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+            self.clone()
+                .into_boxed_vec()
+                .into_iter()
+                .map(|p| PluginTypeId::new(&*p))
+                .collect()
+        }
+        fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
+            self.build().into()
+        }
     }
 
     macro_rules! impl_plugins_tuples {
-        ($(#[$meta:meta])* $(($param: ident, $plugins: ident)),*) => {
+        ($(#[$meta:meta])* $(($param: ident, $plugins: ident, $plugins_lo: ident)),*) => {
             $(#[$meta])*
             impl<$($param, $plugins),*> Plugins<(PluginsTupleMarker, $($param,)*)> for ($($plugins,)*)
             where
@@ -176,8 +214,21 @@ mod sealed {
                 #[allow(unused_variables, reason = "`app` is unused when implemented for the unit type `()`.")]
                 #[track_caller]
                 fn add_to_app(self, app: &mut App) {
-                    let ($($plugins,)*) = self;
-                    $($plugins.add_to_app(app);)*
+                    let ($($plugins_lo,)*) = self;
+                    $($plugins_lo.add_to_app(app);)*
+                }
+
+                fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+                    let ($($plugins_lo,)*) = self;
+                    let values = core::iter::empty();
+                    $(let values = values.chain($plugins_lo.plugin_type_ids().into_iter());)*
+                    values.collect()
+                }
+                fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
+                    let ($($plugins_lo,)*) = self;
+                    let values = core::iter::empty();
+                    $(let values = values.chain($plugins_lo.into_boxed_vec().into_iter());)*
+                    values.collect()
                 }
             }
         }
@@ -189,6 +240,42 @@ mod sealed {
         0,
         15,
         P,
-        S
+        S,
+        s
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Plugin, PluginTypeId, Plugins};
+    use bevy_app::App;
+    use std::prelude::rust_2015::Vec;
+    use std::vec;
+
+    #[derive(Default)]
+    struct EmptyPlugin2;
+    impl Plugin for EmptyPlugin2 {
+        fn build(&self, _app: &mut App) {}
+
+        fn depends_on(&self) -> Vec<PluginTypeId> {
+            vec![PluginTypeId::of::<EmptyPlugin3>()]
+        }
+    }
+
+    #[derive(Default)]
+    struct EmptyPlugin3;
+    impl Plugin for EmptyPlugin3 {
+        fn build(&self, _app: &mut App) {}
+    }
+
+    #[test]
+    fn plugin_type_ids() {
+        assert_eq!(
+            vec![
+                PluginTypeId::of::<EmptyPlugin2>(),
+                PluginTypeId::of::<EmptyPlugin3>()
+            ],
+            (EmptyPlugin2::default(), EmptyPlugin3::default()).plugin_type_ids()
+        );
+    }
 }
