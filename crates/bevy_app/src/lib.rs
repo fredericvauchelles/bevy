@@ -15,13 +15,10 @@
 
 //! This crate is about everything concerning the highest-level, application layer of a Bevy app.
 
+extern crate alloc; // Required to make proc macros work in bevy itself.
+extern crate self as bevy_app;
 #[cfg(feature = "std")]
 extern crate std;
-
-extern crate alloc;
-
-// Required to make proc macros work in bevy itself.
-extern crate self as bevy_app;
 
 mod app;
 mod main_schedule;
@@ -37,12 +34,14 @@ mod terminal_ctrl_c_handler;
 
 #[cfg(feature = "hotpatching")]
 pub mod hotpatch;
+mod plugin_type_id;
 
 pub use app::*;
 pub use main_schedule::*;
 pub use panic_handler::*;
 pub use plugin::*;
 pub use plugin_group::*;
+pub use plugin_type_id::*;
 pub use propagate::*;
 pub use schedule_runner::*;
 pub use sub_app::*;
@@ -63,6 +62,6 @@ pub mod prelude {
             RunFixedMainLoopSystems, SpawnScene, Startup, Update,
         },
         sub_app::SubApp,
-        Plugin, PluginGroup, TaskPoolOptions, TaskPoolPlugin,
+        Plugin, PluginGroup, PluginTypeId, TaskPoolOptions, TaskPoolPlugin,
     };
 }
