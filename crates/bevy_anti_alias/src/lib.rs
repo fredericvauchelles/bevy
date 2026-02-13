@@ -5,7 +5,7 @@
     html_favicon_url = "https://bevy.org/assets/icon.png"
 )]
 
-use bevy_app::Plugin;
+use bevy_app::{Plugin, PluginTypeId};
 use contrast_adaptive_sharpening::CasPlugin;
 use fxaa::FxaaPlugin;
 use smaa::SmaaPlugin;
@@ -32,5 +32,10 @@ impl Plugin for AntiAliasPlugin {
             #[cfg(all(feature = "dlss", not(feature = "force_disable_dlss")))]
             dlss::DlssPlugin,
         ));
+    }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        use bevy_app::plugin_type_ids_of;
+        plugin_type_ids_of!(bevy_render::RenderPlugin)
     }
 }

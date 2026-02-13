@@ -289,6 +289,10 @@ impl Plugin for UiRenderPlugin {
         app.add_plugins(GradientPlugin);
         app.add_plugins(BoxShadowPlugin);
     }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        bevy_app::plugin_type_ids_of!(bevy_render::RenderPlugin, bevy_sprite::SpritePlugin)
+    }
 }
 
 fn new_ui_graph(world: &mut World) -> RenderGraph {

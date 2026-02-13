@@ -92,7 +92,18 @@ pub trait Plugin: Downcast + Any + Send + Sync {
     }
 
     /// This plugin assumes that these plugins are added before this one
+    ///
+    /// These plugins are mandatory for this plugin to behave as expected
     fn depends_on(&self) -> alloc::vec::Vec<PluginTypeId> {
+        alloc::vec::Vec::new()
+    }
+
+    /// This plugin must be built before those plugins.
+    ///
+    /// This plugin my need to be used by others. For instance,
+    /// AssetSource must be defined before the AssetPlugin, although the
+    /// AssetPlugin do not require them to behave properly.
+    fn build_before(&self) -> alloc::vec::Vec<PluginTypeId> {
         alloc::vec::Vec::new()
     }
 }
@@ -130,7 +141,9 @@ impl Plugin for PlaceholderPlugin {
 /// This is implemented for all types which implement [`Plugin`],
 /// [`PluginGroup`](super::PluginGroup), and tuples over [`Plugins`].
 pub trait Plugins<Marker>: sealed::Plugins<Marker> {
+    /// Returns the [`PluginTypeId`] for each plugin in this set
     fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
+    /// Transforms this plugin set into a vec of boxed plugins
     fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>>;
 }
 
@@ -139,10 +152,10 @@ where
     T: sealed::Plugins<Marker>,
 {
     fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
-        <Self as sealed::Plugins<Marker>>::plugin_type_ids(self)
+        <Self as sealed::Plugins<Marker>>::sealed_plugin_type_ids(self)
     }
     fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>> {
-        <Self as sealed::Plugins<Marker>>::into_boxed_vec(self)
+        <Self as sealed::Plugins<Marker>>::sealed_into_boxed_vec(self)
     }
 }
 
@@ -154,8 +167,8 @@ mod sealed {
 
     pub trait Plugins<Marker> {
         fn add_to_app(self, app: &mut App);
-        fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
-        fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>>;
+        fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
+        fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>>;
     }
 
     pub struct PluginMarker;
@@ -173,10 +186,10 @@ mod sealed {
                 )
             }
         }
-        fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+        fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
             alloc::vec![PluginTypeId::of::<P>()]
         }
-        fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
+        fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
             alloc::vec![Box::new(self)]
         }
     }
@@ -187,14 +200,14 @@ mod sealed {
             self.build().finish(app);
         }
 
-        fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+        fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
             self.clone()
-                .into_boxed_vec()
+                .sealed_into_boxed_vec()
                 .into_iter()
                 .map(|p| PluginTypeId::new(&*p))
                 .collect()
         }
-        fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
+        fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
             self.build().into()
         }
     }
@@ -218,16 +231,16 @@ mod sealed {
                     $($plugins_lo.add_to_app(app);)*
                 }
 
-                fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+                fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
                     let ($($plugins_lo,)*) = self;
                     let values = core::iter::empty();
-                    $(let values = values.chain($plugins_lo.plugin_type_ids().into_iter());)*
+                    $(let values = values.chain($plugins_lo.sealed_plugin_type_ids().into_iter());)*
                     values.collect()
                 }
-                fn into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
+                fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
                     let ($($plugins_lo,)*) = self;
                     let values = core::iter::empty();
-                    $(let values = values.chain($plugins_lo.into_boxed_vec().into_iter());)*
+                    $(let values = values.chain($plugins_lo.sealed_into_boxed_vec().into_iter());)*
                     values.collect()
                 }
             }

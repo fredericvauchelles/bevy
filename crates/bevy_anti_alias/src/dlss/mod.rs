@@ -20,7 +20,8 @@ mod prepare;
 
 pub use dlss_wgpu::DlssPerfQualityMode;
 
-use bevy_app::{App, Plugin};
+use crate::AntiAliasPlugin;
+use bevy_app::{plugin_type_ids_of, App, Plugin, PluginTypeId};
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
     prepass::{DepthPrepass, MotionVectorPrepass},
@@ -37,7 +38,7 @@ use bevy_render::{
     },
     texture::CachedTexture,
     view::{prepare_view_targets, Hdr},
-    ExtractSchedule, Render, RenderApp, RenderSystems,
+    ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems,
 };
 use dlss_wgpu::{
     ray_reconstruction::{
@@ -124,6 +125,10 @@ impl Plugin for DlssInitPlugin {
             )
         };
     }
+
+    fn build_before(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(RenderPlugin)
+    }
 }
 
 /// Enables DLSS support. This requires [`DlssInitPlugin`] to function, which must be manually registered in the correct order
@@ -207,6 +212,10 @@ impl Plugin for DlssPlugin {
                     Node3d::Tonemapping,
                 ),
             );
+    }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(DlssInitPlugin)
     }
 }
 

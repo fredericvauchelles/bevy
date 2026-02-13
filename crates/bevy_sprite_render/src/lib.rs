@@ -119,4 +119,8 @@ impl Plugin for SpriteRenderPlugin {
                 );
         };
     }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(bevy_asset::AssetPlugin, bevy_render::RenderPlugin)
+    }
 }

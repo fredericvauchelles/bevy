@@ -1,9 +1,10 @@
 use crate::io::{AssetReader, AssetReaderError, AssetSourceBuilder, PathStream, Reader};
 use crate::{AssetApp, AssetPlugin};
 use alloc::boxed::Box;
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_type_ids_of, App, Plugin, PluginTypeId};
 use bevy_tasks::ConditionalSendFuture;
 use std::path::{Path, PathBuf};
+use std::prelude::rust_2015::Vec;
 use tracing::warn;
 
 /// Adds the `http` and `https` asset sources to the app.
@@ -82,6 +83,10 @@ impl Plugin for WebAssetPlugin {
             AssetSourceBuilder::new(move || Box::new(WebAssetReader::Https))
                 .with_processed_reader(move || Box::new(WebAssetReader::Https)),
         );
+    }
+
+    fn build_before(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(AssetPlugin)
     }
 }
 
@@ -264,8 +269,6 @@ mod web_asset_cache {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn make_http_uri() {
         assert_eq!(

@@ -102,6 +102,13 @@ impl Plugin for AudioPlugin {
 
         app.add_audio_source::<Pitch>();
     }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(
+            #[cfg(any(feature = "mp3", feature = "flac", feature = "wav", feature = "vorbis"))]
+            bevy_asset::AssetPlugin
+        )
+    }
 }
 
 impl AddAudioSource for App {

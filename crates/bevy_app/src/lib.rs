@@ -61,6 +61,7 @@ pub mod prelude {
             PostStartup, PostUpdate, PreStartup, PreUpdate, RunFixedMainLoop,
             RunFixedMainLoopSystems, SpawnScene, Startup, Update,
         },
+        plugin_type_ids_of,
         sub_app::SubApp,
         Plugin, PluginGroup, PluginTypeId, TaskPoolOptions, TaskPoolPlugin,
     };

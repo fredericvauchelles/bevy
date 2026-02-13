@@ -369,6 +369,10 @@ impl Plugin for PbrPlugin {
         let global_cluster_settings = make_global_cluster_settings(render_app.world());
         app.insert_resource(global_cluster_settings);
     }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin)
+    }
 }
 
 pub fn stbn_placeholder() -> Image {

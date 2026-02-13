@@ -26,14 +26,11 @@
     html_favicon_url = "https://bevy.org/assets/icon.png"
 )]
 
+extern crate alloc;
+extern crate core; // Required to make proc macros work in bevy itself.
+extern crate self as bevy_render;
 #[cfg(target_pointer_width = "16")]
 compile_error!("bevy_render cannot compile for a 16-bit platform.");
-
-extern crate alloc;
-extern crate core;
-
-// Required to make proc macros work in bevy itself.
-extern crate self as bevy_render;
 
 pub mod alpha;
 pub mod batching;
@@ -90,8 +87,8 @@ use crate::{
 };
 use alloc::sync::Arc;
 use batching::gpu_preprocessing::BatchingPlugin;
-use bevy_app::{App, AppLabel, Plugin, SubApp};
-use bevy_asset::{AssetApp, AssetServer};
+use bevy_app::{plugin_type_ids_of, App, AppLabel, Plugin, PluginTypeId, SubApp};
+use bevy_asset::{AssetApp, AssetPlugin, AssetServer};
 use bevy_ecs::{
     prelude::*,
     schedule::{ScheduleBuildSettings, ScheduleLabel},
@@ -440,6 +437,10 @@ impl Plugin for RenderPlugin {
                 .insert_resource(render_adapter)
                 .insert_resource(adapter_info);
         }
+    }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(AssetPlugin)
     }
 }
 

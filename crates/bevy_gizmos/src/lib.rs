@@ -64,7 +64,7 @@ pub mod prelude {
     pub use crate::light::{LightGizmoColor, LightGizmoConfigGroup, ShowLightGizmo};
 }
 
-use bevy_app::{App, FixedFirst, FixedLast, Last, Plugin, RunFixedMainLoop};
+use bevy_app::{App, FixedFirst, FixedLast, Last, Plugin, PluginTypeId, RunFixedMainLoop};
 use bevy_asset::{Asset, AssetApp, Assets, Handle};
 use bevy_ecs::{
     resource::Resource,
@@ -98,6 +98,11 @@ impl Plugin for GizmoPlugin {
 
         #[cfg(feature = "bevy_light")]
         app.add_plugins(LightGizmoPlugin);
+    }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        use bevy_app::plugin_type_ids_of;
+        plugin_type_ids_of!(bevy_asset::AssetPlugin)
     }
 }
 

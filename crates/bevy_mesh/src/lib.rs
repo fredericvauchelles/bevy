@@ -14,7 +14,7 @@ pub mod morph;
 pub mod primitives;
 pub mod skinning;
 mod vertex;
-use bevy_app::{App, Plugin, PostUpdate};
+use bevy_app::{plugin_type_ids_of, App, Plugin, PluginTypeId, PostUpdate};
 use bevy_asset::{AssetApp, AssetEventSystems};
 use bevy_ecs::schedule::{IntoScheduleConfigs, SystemSet};
 use bitflags::bitflags;
@@ -61,6 +61,10 @@ impl Plugin for MeshPlugin {
                 PostUpdate,
                 mark_3d_meshes_as_changed_if_their_assets_changed.after(AssetEventSystems),
             );
+    }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(bevy_asset::AssetPlugin)
     }
 }
 

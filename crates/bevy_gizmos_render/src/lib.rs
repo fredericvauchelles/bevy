@@ -24,7 +24,7 @@ mod pipeline_2d;
 #[cfg(feature = "bevy_pbr")]
 mod pipeline_3d;
 
-use bevy_app::{App, Plugin};
+use bevy_app::{App, Plugin, PluginTypeId};
 use bevy_ecs::{
     resource::Resource,
     schedule::{IntoScheduleConfigs, SystemSet},
@@ -112,6 +112,15 @@ impl Plugin for GizmoRenderPlugin {
         } else {
             tracing::warn!("bevy_render feature is enabled but RenderApp was not detected. Are you sure you loaded GizmoPlugin after RenderPlugin?");
         }
+    }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        use bevy_app::plugin_type_ids_of;
+        plugin_type_ids_of!(
+            bevy_render::RenderPlugin,
+            bevy_asset::AssetPlugin,
+            bevy_gizmos::GizmoPlugin
+        )
     }
 }
 

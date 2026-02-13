@@ -97,6 +97,10 @@ impl Plugin for SpritePlugin {
         #[cfg(feature = "bevy_picking")]
         app.add_plugins(SpritePickingPlugin);
     }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!("bevy_render::RenderPlugin")
+    }
 }
 
 /// System calculating and inserting an [`Aabb`] component to entities with either:

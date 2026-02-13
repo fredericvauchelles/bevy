@@ -106,4 +106,8 @@ impl Plugin for TextPlugin {
             assets.insert(AssetId::default(), asset).unwrap();
         };
     }
+
+    fn depends_on(&self) -> Vec<PluginTypeId> {
+        plugin_type_ids_of!(bevy_asset::AssetPlugin)
+    }
 }
