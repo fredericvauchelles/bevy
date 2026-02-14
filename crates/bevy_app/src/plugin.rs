@@ -1,5 +1,5 @@
 use crate::App;
-use bevy_app::PluginTypeId;
+use bevy_app::PluginId;
 use core::any::Any;
 use downcast_rs::{impl_downcast, Downcast};
 
@@ -85,6 +85,12 @@ pub trait Plugin: Downcast + Any + Send + Sync {
         core::any::type_name::<Self>()
     }
 
+    /// The unique identifier of this plugin,
+    /// defaults to its [`core::any::type_name`]
+    fn id(&self) -> PluginId {
+        PluginId::of::<Self>()
+    }
+
     /// If the plugin can be meaningfully instantiated several times in an [`App`],
     /// override this method to return `false`.
     fn is_unique(&self) -> bool {
@@ -94,7 +100,7 @@ pub trait Plugin: Downcast + Any + Send + Sync {
     /// This plugin assumes that these plugins are added before this one
     ///
     /// These plugins are mandatory for this plugin to behave as expected
-    fn depends_on(&self) -> alloc::vec::Vec<PluginTypeId> {
+    fn build_after(&self) -> alloc::vec::Vec<PluginDependency> {
         alloc::vec::Vec::new()
     }
 
@@ -103,12 +109,19 @@ pub trait Plugin: Downcast + Any + Send + Sync {
     /// This plugin my need to be used by others. For instance,
     /// AssetSource must be defined before the AssetPlugin, although the
     /// AssetPlugin do not require them to behave properly.
-    fn build_before(&self) -> alloc::vec::Vec<PluginTypeId> {
+    fn build_before(&self) -> alloc::vec::Vec<PluginDependency> {
         alloc::vec::Vec::new()
     }
 }
 
 impl_downcast!(Plugin);
+
+/// Describe a dependency to a plugin
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum PluginDependency {
+    Required(PluginId),
+    Optional(PluginId),
+}
 
 impl<T: Fn(&mut App) + Send + Sync + 'static> Plugin for T {
     fn build(&self, app: &mut App) {
@@ -141,8 +154,8 @@ impl Plugin for PlaceholderPlugin {
 /// This is implemented for all types which implement [`Plugin`],
 /// [`PluginGroup`](super::PluginGroup), and tuples over [`Plugins`].
 pub trait Plugins<Marker>: sealed::Plugins<Marker> {
-    /// Returns the [`PluginTypeId`] for each plugin in this set
-    fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
+    /// Returns the [`PluginId`] for each plugin in this set
+    fn plugin_ids(&self) -> alloc::vec::Vec<PluginId>;
     /// Transforms this plugin set into a vec of boxed plugins
     fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>>;
 }
@@ -151,8 +164,8 @@ impl<Marker, T> Plugins<Marker> for T
 where
     T: sealed::Plugins<Marker>,
 {
-    fn plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
-        <Self as sealed::Plugins<Marker>>::sealed_plugin_type_ids(self)
+    fn plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
+        <Self as sealed::Plugins<Marker>>::sealed_plugin_ids(self)
     }
     fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>> {
         <Self as sealed::Plugins<Marker>>::sealed_into_boxed_vec(self)
@@ -162,12 +175,12 @@ where
 mod sealed {
     use crate::{App, AppError, Plugin, PluginGroup};
     use alloc::boxed::Box;
-    use bevy_app::PluginTypeId;
+    use bevy_app::PluginId;
     use variadics_please::all_tuples;
 
     pub trait Plugins<Marker> {
         fn add_to_app(self, app: &mut App);
-        fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId>;
+        fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId>;
         fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>>;
     }
 
@@ -186,8 +199,8 @@ mod sealed {
                 )
             }
         }
-        fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
-            alloc::vec![PluginTypeId::of::<P>()]
+        fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
+            alloc::vec![PluginId::of::<P>()]
         }
         fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
             alloc::vec![Box::new(self)]
@@ -200,11 +213,11 @@ mod sealed {
             self.build().finish(app);
         }
 
-        fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+        fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
             self.clone()
                 .sealed_into_boxed_vec()
                 .into_iter()
-                .map(|p| PluginTypeId::new(&*p))
+                .map(|p| p.id())
                 .collect()
         }
         fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
@@ -231,10 +244,10 @@ mod sealed {
                     $($plugins_lo.add_to_app(app);)*
                 }
 
-                fn sealed_plugin_type_ids(&self) -> alloc::vec::Vec<PluginTypeId> {
+                fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
                     let ($($plugins_lo,)*) = self;
                     let values = core::iter::empty();
-                    $(let values = values.chain($plugins_lo.sealed_plugin_type_ids().into_iter());)*
+                    $(let values = values.chain($plugins_lo.sealed_plugin_ids().into_iter());)*
                     values.collect()
                 }
                 fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
@@ -260,7 +273,7 @@ mod sealed {
 
 #[cfg(test)]
 mod tests {
-    use super::{Plugin, PluginTypeId, Plugins};
+    use super::{Plugin, PluginDependency, PluginId, Plugins};
     use bevy_app::App;
     use std::prelude::rust_2015::Vec;
     use std::vec;
@@ -270,8 +283,8 @@ mod tests {
     impl Plugin for EmptyPlugin2 {
         fn build(&self, _app: &mut App) {}
 
-        fn depends_on(&self) -> Vec<PluginTypeId> {
-            vec![PluginTypeId::of::<EmptyPlugin3>()]
+        fn build_after(&self) -> Vec<PluginDependency> {
+            vec![PluginDependency::Required(PluginId::of::<EmptyPlugin3>())]
         }
     }
 
@@ -282,13 +295,13 @@ mod tests {
     }
 
     #[test]
-    fn plugin_type_ids() {
+    fn plugin_ids() {
         assert_eq!(
             vec![
-                PluginTypeId::of::<EmptyPlugin2>(),
-                PluginTypeId::of::<EmptyPlugin3>()
+                PluginId::of::<EmptyPlugin2>(),
+                PluginId::of::<EmptyPlugin3>()
             ],
-            (EmptyPlugin2::default(), EmptyPlugin3::default()).plugin_type_ids()
+            (EmptyPlugin2::default(), EmptyPlugin3::default()).plugin_ids()
         );
     }
 }

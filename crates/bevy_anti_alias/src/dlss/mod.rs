@@ -21,7 +21,7 @@ mod prepare;
 pub use dlss_wgpu::DlssPerfQualityMode;
 
 use crate::AntiAliasPlugin;
-use bevy_app::{plugin_type_ids_of, App, Plugin, PluginTypeId};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PluginId};
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
     prepass::{DepthPrepass, MotionVectorPrepass},
@@ -126,8 +126,8 @@ impl Plugin for DlssInitPlugin {
         };
     }
 
-    fn build_before(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(RenderPlugin)
+    fn build_before(&self) -> Vec<PluginDependency> {
+        plugin_deps!(RenderPlugin)
     }
 }
 
@@ -214,8 +214,8 @@ impl Plugin for DlssPlugin {
             );
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(DlssInitPlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        plugin_deps!(DlssInitPlugin)
     }
 }
 

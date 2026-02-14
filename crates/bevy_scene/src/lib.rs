@@ -110,8 +110,8 @@ impl Plugin for ScenePlugin {
             });
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(AssetPlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        plugin_deps!(AssetPlugin)
     }
 }
 

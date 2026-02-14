@@ -370,8 +370,8 @@ impl Plugin for PbrPlugin {
         app.insert_resource(global_cluster_settings);
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin)
     }
 }
 

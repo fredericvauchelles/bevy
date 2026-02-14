@@ -21,7 +21,7 @@ use core::cell::RefCell;
 use winit::{event_loop::EventLoop, window::WindowId};
 
 use bevy_a11y::AccessibilityRequested;
-use bevy_app::{plugin_type_ids_of, App, Last, Plugin, PluginTypeId};
+use bevy_app::{plugin_deps, App, Last, Plugin, PluginDependency, PluginId};
 use bevy_ecs::prelude::*;
 use bevy_window::{exit_on_all_closed, CursorOptions, Window, WindowCreated};
 use system::{changed_cursor_options, changed_windows, check_keyboard_focus_lost, despawn_windows};
@@ -158,8 +158,8 @@ impl Plugin for WinitPlugin {
         );
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(WindowPlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        plugin_deps!(WindowPlugin)
     }
 }
 

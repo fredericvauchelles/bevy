@@ -1,7 +1,7 @@
 use crate::io::{AssetReader, AssetReaderError, AssetSourceBuilder, PathStream, Reader};
 use crate::{AssetApp, AssetPlugin};
 use alloc::boxed::Box;
-use bevy_app::{plugin_type_ids_of, App, Plugin, PluginTypeId};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PluginId};
 use bevy_tasks::ConditionalSendFuture;
 use std::path::{Path, PathBuf};
 use std::prelude::rust_2015::Vec;
@@ -85,8 +85,8 @@ impl Plugin for WebAssetPlugin {
         );
     }
 
-    fn build_before(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(AssetPlugin)
+    fn build_before(&self) -> Vec<PluginDependency> {
+        plugin_deps!(AssetPlugin)
     }
 }
 

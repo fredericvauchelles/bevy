@@ -290,8 +290,8 @@ impl Plugin for UiRenderPlugin {
         app.add_plugins(BoxShadowPlugin);
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        bevy_app::plugin_type_ids_of!(bevy_render::RenderPlugin, bevy_sprite::SpritePlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        bevy_app::plugin_deps!(bevy_render::RenderPlugin, bevy_sprite::SpritePlugin)
     }
 }
 

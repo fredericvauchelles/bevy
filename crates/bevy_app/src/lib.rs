@@ -25,7 +25,7 @@ mod main_schedule;
 mod panic_handler;
 mod plugin;
 mod plugin_group;
-mod plugin_type_id;
+mod plugin_id;
 mod propagate;
 mod schedule_runner;
 mod sub_app;
@@ -41,7 +41,7 @@ pub use main_schedule::*;
 pub use panic_handler::*;
 pub use plugin::*;
 pub use plugin_group::*;
-pub use plugin_type_id::*;
+pub use plugin_id::*;
 pub use propagate::*;
 pub use schedule_runner::*;
 pub use sub_app::*;
@@ -61,8 +61,8 @@ pub mod prelude {
             PostStartup, PostUpdate, PreStartup, PreUpdate, RunFixedMainLoop,
             RunFixedMainLoopSystems, SpawnScene, Startup, Update,
         },
-        plugin_type_ids_of,
+        plugin_deps,
         sub_app::SubApp,
-        Plugin, PluginGroup, PluginTypeId, TaskPoolOptions, TaskPoolPlugin,
+        Plugin, PluginDependency, PluginGroup, PluginId, TaskPoolOptions, TaskPoolPlugin,
     };
 }

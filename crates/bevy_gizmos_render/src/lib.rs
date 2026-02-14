@@ -24,7 +24,7 @@ mod pipeline_2d;
 #[cfg(feature = "bevy_pbr")]
 mod pipeline_3d;
 
-use bevy_app::{App, Plugin, PluginTypeId};
+use bevy_app::{App, Plugin, PluginDependency, PluginId};
 use bevy_ecs::{
     resource::Resource,
     schedule::{IntoScheduleConfigs, SystemSet},
@@ -114,9 +114,9 @@ impl Plugin for GizmoRenderPlugin {
         }
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        use bevy_app::plugin_type_ids_of;
-        plugin_type_ids_of!(
+    fn build_after(&self) -> Vec<PluginDependency> {
+        use bevy_app::plugin_deps;
+        plugin_deps!(
             bevy_render::RenderPlugin,
             bevy_asset::AssetPlugin,
             bevy_gizmos::GizmoPlugin

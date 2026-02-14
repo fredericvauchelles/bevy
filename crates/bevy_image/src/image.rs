@@ -6,7 +6,7 @@ use super::basis::*;
 use super::dds::*;
 #[cfg(feature = "ktx2")]
 use super::ktx2::*;
-use bevy_app::{plugin_type_ids_of, App, Plugin, PluginTypeId};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PluginId};
 #[cfg(not(feature = "bevy_reflect"))]
 use bevy_reflect::TypePath;
 #[cfg(feature = "bevy_reflect")]
@@ -239,8 +239,9 @@ impl Plugin for ImagePlugin {
         app.preregister_asset_loader::<ImageLoader>(ImageLoader::SUPPORTED_FILE_EXTENSIONS);
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(bevy_asset::AssetPlugin, "bevy_render::RenderPlugin")
+    fn build_after(&self) -> Vec<PluginDependency> {
+        use bevy_app::plugin_deps;
+        plugin_deps!(bevy_asset::AssetPlugin, "bevy_render::RenderPlugin")
     }
 }
 

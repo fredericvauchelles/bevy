@@ -98,8 +98,8 @@ impl Plugin for SpritePlugin {
         app.add_plugins(SpritePickingPlugin);
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!("bevy_render::RenderPlugin")
+    fn build_after(&self) -> Vec<PluginDependency> {
+        plugin_deps!("bevy_render::RenderPlugin")
     }
 }
 

@@ -120,7 +120,7 @@ impl Plugin for SpriteRenderPlugin {
         };
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        plugin_type_ids_of!(bevy_asset::AssetPlugin, bevy_render::RenderPlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        plugin_deps!(bevy_asset::AssetPlugin, bevy_render::RenderPlugin)
     }
 }

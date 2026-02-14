@@ -17,7 +17,7 @@ use crate::{
     bloom::BloomPlugin, dof::DepthOfFieldPlugin, effect_stack::EffectStackPlugin,
     motion_blur::MotionBlurPlugin, msaa_writeback::MsaaWritebackPlugin,
 };
-use bevy_app::{App, Plugin, PluginTypeId};
+use bevy_app::{App, Plugin, PluginDependency};
 
 /// Adds bloom, motion blur, depth of field, and chromatic aberration support.
 #[derive(Default)]
@@ -34,8 +34,8 @@ impl Plugin for PostProcessPlugin {
         ));
     }
 
-    fn depends_on(&self) -> Vec<PluginTypeId> {
-        use bevy_app::plugin_type_ids_of;
-        plugin_type_ids_of!(bevy_render::RenderPlugin)
+    fn build_after(&self) -> Vec<PluginDependency> {
+        use bevy_app::plugin_deps;
+        plugin_deps!(bevy_render::RenderPlugin)
     }
 }
