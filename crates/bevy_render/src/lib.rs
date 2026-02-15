@@ -87,7 +87,7 @@ use crate::{
 };
 use alloc::sync::Arc;
 use batching::gpu_preprocessing::BatchingPlugin;
-use bevy_app::{plugin_deps, App, AppLabel, Plugin, PluginDependency, PluginId, SubApp};
+use bevy_app::{plugin_deps, App, AppLabel, Plugin, PluginDependency, SubApp};
 use bevy_asset::{AssetApp, AssetPlugin, AssetServer};
 use bevy_ecs::{
     prelude::*,
@@ -439,7 +439,7 @@ impl Plugin for RenderPlugin {
         }
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         plugin_deps!(AssetPlugin)
     }
 }

@@ -214,7 +214,7 @@ impl Plugin for DlssPlugin {
             );
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         plugin_deps!(DlssInitPlugin)
     }
 }

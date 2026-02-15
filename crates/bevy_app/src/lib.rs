@@ -25,7 +25,6 @@ mod main_schedule;
 mod panic_handler;
 mod plugin;
 mod plugin_group;
-mod plugin_id;
 mod propagate;
 mod schedule_runner;
 mod sub_app;
@@ -33,15 +32,18 @@ mod task_pool_plugin;
 #[cfg(all(any(all(unix, not(target_os = "horizon")), windows), feature = "std"))]
 mod terminal_ctrl_c_handler;
 
+mod _custom;
+pub use _custom::app_builder;
+pub use _custom::plugin_id;
 #[cfg(feature = "hotpatching")]
 pub mod hotpatch;
 
+pub use _custom::plugin_id::*;
 pub use app::*;
 pub use main_schedule::*;
 pub use panic_handler::*;
 pub use plugin::*;
 pub use plugin_group::*;
-pub use plugin_id::*;
 pub use propagate::*;
 pub use schedule_runner::*;
 pub use sub_app::*;
@@ -55,6 +57,7 @@ pub use terminal_ctrl_c_handler::*;
 pub mod prelude {
     #[doc(hidden)]
     pub use crate::{
+        _custom::prelude::*,
         app::{App, AppExit},
         main_schedule::{
             First, FixedFirst, FixedLast, FixedPostUpdate, FixedPreUpdate, FixedUpdate, Last, Main,

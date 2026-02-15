@@ -370,7 +370,7 @@ impl Plugin for PbrPlugin {
         app.insert_resource(global_cluster_settings);
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin)
     }
 }

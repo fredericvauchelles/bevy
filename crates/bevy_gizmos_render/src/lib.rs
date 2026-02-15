@@ -6,6 +6,8 @@
 
 //! This crate renders `bevy_gizmos` with `bevy_render`.
 
+extern crate alloc;
+
 /// System set label for the systems handling the rendering of gizmos.
 #[derive(SystemSet, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum GizmoRenderSystems {
@@ -114,7 +116,7 @@ impl Plugin for GizmoRenderPlugin {
         }
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         use bevy_app::plugin_deps;
         plugin_deps!(
             bevy_render::RenderPlugin,

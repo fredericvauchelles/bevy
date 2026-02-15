@@ -19,7 +19,7 @@
 //!
 //! See the documentation on [Gizmos](crate::gizmos::Gizmos) for more examples.
 
-// Required to make proc macros work in bevy itself.
+extern crate alloc; // Required to make proc macros work in bevy itself.
 extern crate self as bevy_gizmos;
 
 pub mod aabb;
@@ -64,9 +64,7 @@ pub mod prelude {
     pub use crate::light::{LightGizmoColor, LightGizmoConfigGroup, ShowLightGizmo};
 }
 
-use bevy_app::{
-    App, FixedFirst, FixedLast, Last, Plugin, PluginDependency, PluginId, RunFixedMainLoop,
-};
+use bevy_app::{App, FixedFirst, FixedLast, Last, Plugin, PluginDependency, RunFixedMainLoop};
 use bevy_asset::{Asset, AssetApp, Assets, Handle};
 use bevy_ecs::{
     resource::Resource,
@@ -102,7 +100,7 @@ impl Plugin for GizmoPlugin {
         app.add_plugins(LightGizmoPlugin);
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         use bevy_app::plugin_deps;
         plugin_deps!(bevy_asset::AssetPlugin)
     }

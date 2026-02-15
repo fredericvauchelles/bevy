@@ -270,7 +270,7 @@ impl Plugin for GltfPlugin {
         });
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         plugin_deps!(bevy_asset::AssetPlugin)
     }
 }

@@ -1,8 +1,10 @@
 use crate::Plugin;
 use alloc::borrow::Cow;
+use alloc::string::ToString;
 use core::any::type_name;
 use core::fmt::{Display, Formatter};
 use core::hash::Hash;
+use uuid::Uuid;
 
 /// Unique identifier of a plugin type
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -17,6 +19,11 @@ impl PluginId {
     pub fn of<P: Plugin + ?Sized>() -> Self {
         Self(Cow::Borrowed(type_name::<P>()))
     }
+
+    /// Builds a random [`PluginId`]
+    pub fn random() -> Self {
+        Self(Cow::Owned(Uuid::new_v4().to_string()))
+    }
 }
 
 impl<P: Into<Cow<'static, str>>> From<P> for PluginId {
@@ -25,7 +32,7 @@ impl<P: Into<Cow<'static, str>>> From<P> for PluginId {
     }
 }
 
-/// Generates a vec of [`crate::prelude::PluginDependency`] with provided plugins.
+/// Generates a `Cow<'static, [PluginDependency]>` of [`crate::prelude::PluginDependency`] with provided plugins.
 ///
 /// You can either use the type or a string literal of the type_name
 /// Prefer to use the type when possible, the string literal is helpful to avoid
@@ -42,25 +49,25 @@ impl<P: Into<Cow<'static, str>>> From<P> for PluginId {
 #[macro_export]
 macro_rules! plugin_deps {
     ([$(,)? $(#[$attr:meta])* $ty:path] -> [$($body:tt)*]) => {
-        plugin_deps!([] -> [$(#[$attr])* $crate::prelude::PluginDependency::Required($crate::prelude::PluginId::of::<$ty>()), $($body)*]);
+        plugin_deps!([] -> [$(#[$attr])* $crate::prelude::PluginDependency::Required($crate::prelude::PluginId::of::<$ty>()), $($body)*])
     };
     ([$(,)? $(#[$attr:meta])* $ty:path, $($tt:tt)*] -> [$($body:tt)*]) => {
-        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Required($crate::prelude::PluginId::of::<$ty>()), $($body)*]);
+        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Required($crate::prelude::PluginId::of::<$ty>()), $($body)*])
     };
     ([$(,)? $(#[$attr:meta])* $type_name:literal $($tt:tt)*] -> [$($body:tt)*]) => {
-        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Required($crate::prelude::PluginId::from($type_name)), $($body)*]);
+        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Required($crate::prelude::PluginId::from($type_name)), $($body)*])
     };
     ([$(,)? $(#[$attr:meta])* ?$ty:path] -> [$($body:tt)*]) => {
-        plugin_deps!([] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::of::<$ty>()), $($body)*]);
+        plugin_deps!([] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::of::<$ty>()), $($body)*])
     };
     ([$(,)? $(#[$attr:meta])* ?$ty:path, $($tt:tt)*] -> [$($body:tt)*]) => {
-        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::of::<$ty>()), $($body)*]);
+        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::of::<$ty>()), $($body)*])
     };
     ([$(,)? $(#[$attr:meta])* ?$type_name:literal $($tt:tt)*] -> [$($body:tt)*]) => {
-        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::from($type_name)), $($body)*]);
+        plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::from($type_name)), $($body)*])
     };
     ([$(,)? ] -> [$($body:tt)*]) => {
-        vec![$($body)*]
+        vec![$($body)*].into()
     };
     ($($tt:tt)*) => {
         plugin_deps!{[$($tt)+] -> []}

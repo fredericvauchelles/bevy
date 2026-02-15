@@ -18,6 +18,7 @@ use crate::{
     motion_blur::MotionBlurPlugin, msaa_writeback::MsaaWritebackPlugin,
 };
 use bevy_app::{App, Plugin, PluginDependency};
+use smallvec::alloc;
 
 /// Adds bloom, motion blur, depth of field, and chromatic aberration support.
 #[derive(Default)]
@@ -34,7 +35,7 @@ impl Plugin for PostProcessPlugin {
         ));
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         use bevy_app::plugin_deps;
         plugin_deps!(bevy_render::RenderPlugin)
     }

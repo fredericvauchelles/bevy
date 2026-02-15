@@ -1256,7 +1256,7 @@ impl Plugin for AnimationPlugin {
             );
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         use bevy_app::plugin_deps;
         plugin_deps!(bevy_asset::AssetPlugin)
     }

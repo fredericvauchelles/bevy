@@ -7,6 +7,8 @@
 
 //! Provides rendering functionality for `bevy_ui`.
 
+extern crate alloc;
+
 pub mod box_shadow;
 mod color_space;
 mod gradient;
@@ -290,7 +292,7 @@ impl Plugin for UiRenderPlugin {
         app.add_plugins(BoxShadowPlugin);
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         bevy_app::plugin_deps!(bevy_render::RenderPlugin, bevy_sprite::SpritePlugin)
     }
 }

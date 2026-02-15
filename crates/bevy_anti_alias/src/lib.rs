@@ -5,6 +5,8 @@
     html_favicon_url = "https://bevy.org/assets/icon.png"
 )]
 
+extern crate alloc;
+
 use bevy_app::{Plugin, PluginDependency};
 use contrast_adaptive_sharpening::CasPlugin;
 use fxaa::FxaaPlugin;
@@ -34,7 +36,7 @@ impl Plugin for AntiAliasPlugin {
         ));
     }
 
-    fn build_after(&self) -> Vec<PluginDependency> {
+    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         use bevy_app::plugin_deps;
         plugin_deps!(bevy_render::RenderPlugin)
     }

@@ -85,23 +85,32 @@ pub trait Plugin: Downcast + Any + Send + Sync {
         core::any::type_name::<Self>()
     }
 
-    /// The unique identifier of this plugin,
-    /// defaults to its [`core::any::type_name`]
-    fn id(&self) -> PluginId {
-        PluginId::of::<Self>()
-    }
-
     /// If the plugin can be meaningfully instantiated several times in an [`App`],
     /// override this method to return `false`.
     fn is_unique(&self) -> bool {
         true
     }
 
+    /// The unique identifier of this plugin,
+    /// defaults to its [`core::any::type_name`]
+    fn id(&self) -> PluginId {
+        PluginId::of::<Self>()
+    }
+
+    /// Pre build functions are executed before building the plugin graph.
+    ///
+    /// If you need to add plugins based on added plugins, this is the place to add them
+    fn pre_build(
+        &self,
+    ) -> Option<alloc::boxed::Box<dyn FnOnce(&mut super::_custom::app_builder::AppBuilder)>> {
+        None
+    }
+
     /// This plugin assumes that these plugins are added before this one
     ///
     /// These plugins are mandatory for this plugin to behave as expected
-    fn build_after(&self) -> alloc::vec::Vec<PluginDependency> {
-        alloc::vec::Vec::new()
+    fn build_after(&'_ self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
+        alloc::borrow::Cow::Borrowed(&[])
     }
 
     /// This plugin must be built before those plugins.
@@ -109,8 +118,8 @@ pub trait Plugin: Downcast + Any + Send + Sync {
     /// This plugin my need to be used by others. For instance,
     /// AssetSource must be defined before the AssetPlugin, although the
     /// AssetPlugin do not require them to behave properly.
-    fn build_before(&self) -> alloc::vec::Vec<PluginDependency> {
-        alloc::vec::Vec::new()
+    fn build_before(&'_ self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
+        alloc::borrow::Cow::Borrowed(&[])
     }
 }
 
@@ -274,17 +283,17 @@ mod sealed {
 #[cfg(test)]
 mod tests {
     use super::{Plugin, PluginDependency, PluginId, Plugins};
+    use crate::plugin_deps;
+    use alloc::vec;
     use bevy_app::App;
-    use std::prelude::rust_2015::Vec;
-    use std::vec;
 
     #[derive(Default)]
     struct EmptyPlugin2;
     impl Plugin for EmptyPlugin2 {
         fn build(&self, _app: &mut App) {}
 
-        fn build_after(&self) -> Vec<PluginDependency> {
-            vec![PluginDependency::Required(PluginId::of::<EmptyPlugin3>())]
+        fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
+            plugin_deps!(EmptyPlugin3)
         }
     }
 
