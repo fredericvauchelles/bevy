@@ -2,6 +2,7 @@ use crate::*;
 use alloc::vec::Vec;
 use bevy_ecs::error::*;
 use bevy_ecs::prelude::BevyError;
+use core::borrow::Borrow;
 use plugin_graph::PluginGraph;
 
 mod plugin_graph;
@@ -9,6 +10,8 @@ mod plugin_graph;
 pub mod prelude {
     pub use super::AppBuilder;
 }
+
+pub use plugin_graph::GetPluginError;
 
 pub struct AppBuilder {
     plugin_graph: PluginGraph,
@@ -66,9 +69,22 @@ impl AppBuilder {
         self
     }
 
+    /// get a plugin
+    pub fn get_plugin<P: Plugin>(&self, id: impl Borrow<PluginId>) -> Result<&P, GetPluginError> {
+        self.plugin_graph.get_plugin::<P>(id.borrow())
+    }
+
+    /// get a plugin
+    pub fn get_plugin_mut<P: Plugin>(
+        &mut self,
+        id: impl Borrow<PluginId>,
+    ) -> Result<&mut P, GetPluginError> {
+        self.plugin_graph.get_plugin_mut::<P>(id.borrow())
+    }
+
     /// Checks if a plugin is already added
-    pub fn contains_plugin_type_id(&self, id: &PluginId) -> bool {
-        self.plugin_graph.contains_plugin_type_id(id)
+    pub fn contains_plugin_id(&self, id: &PluginId) -> bool {
+        self.plugin_graph.contains_plugin_id(id)
     }
 
     /// Checks if a plugin is already added

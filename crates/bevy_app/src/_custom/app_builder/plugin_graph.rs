@@ -1,11 +1,19 @@
 use alloc::boxed::Box;
 use bevy_app::*;
 use bevy_ecs::prelude::*;
+use bevy_platform::collections::HashMap;
 use petgraph::prelude::NodeIndex;
-use std::collections::HashMap;
 use thiserror::Error;
 #[cfg(feature = "trace")]
 use tracing::*;
+
+#[derive(Debug, Error)]
+pub enum GetPluginError {
+    #[error("The plugin type with id {0} is not of the expected type {1}")]
+    InvalidType(PluginId, &'static str),
+    #[error("The plugin with id {0} was not added")]
+    PluginNotAdded(PluginId),
+}
 
 #[derive(Default)]
 pub struct PluginGraph {
@@ -52,12 +60,44 @@ impl PluginGraph {
         self
     }
 
-    pub fn contains_plugin_type_id(&self, id: &PluginId) -> bool {
+    pub fn contains_plugin_id(&self, id: &PluginId) -> bool {
         self.id2node.contains_key(id)
     }
 
     pub fn contains_plugin<P: Plugin>(&self) -> bool {
-        self.contains_plugin_type_id(&PluginId::of::<P>())
+        self.contains_plugin_id(&PluginId::of::<P>())
+    }
+
+    pub fn get_plugin<P: Plugin>(&self, id: &PluginId) -> Result<&P, GetPluginError> {
+        let Some(node) = self.id2node.get(id) else {
+            return Err(GetPluginError::PluginNotAdded(id.clone()));
+        };
+        let Some(plugin) = self.plugins.get(node) else {
+            return Err(GetPluginError::PluginNotAdded(id.clone()));
+        };
+        let Some(plugin) = plugin.downcast_ref::<P>() else {
+            return Err(GetPluginError::InvalidType(
+                id.clone(),
+                core::any::type_name::<P>(),
+            ));
+        };
+        Ok(plugin)
+    }
+
+    pub fn get_plugin_mut<P: Plugin>(&mut self, id: &PluginId) -> Result<&mut P, GetPluginError> {
+        let Some(node) = self.id2node.get(id) else {
+            return Err(GetPluginError::PluginNotAdded(id.clone()));
+        };
+        let Some(plugin) = self.plugins.get_mut(node) else {
+            return Err(GetPluginError::PluginNotAdded(id.clone()));
+        };
+        let Some(plugin) = plugin.downcast_mut::<P>() else {
+            return Err(GetPluginError::InvalidType(
+                id.clone(),
+                core::any::type_name::<P>(),
+            ));
+        };
+        Ok(plugin)
     }
 
     pub fn try_into_plugin_group_builder(self) -> Result<PluginGroupBuilder, BevyError> {
@@ -90,7 +130,7 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
                     PluginDependency::Required(id) => (id, true),
                     PluginDependency::Optional(id) => (id, false),
                 };
-                if let Some(from) = value.id2node.get(&from) {
+                if let Some(from) = value.id2node.get(from) {
                     value.graph.add_edge(*from, this_plugin, ());
                 } else if is_required {
                     Err(PluginGraphBuildError::MissingRequiredPlugin(from.clone()))?
@@ -106,7 +146,7 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
                     PluginDependency::Required(id) => (id, true),
                     PluginDependency::Optional(id) => (id, false),
                 };
-                if let Some(to) = value.id2node.get(&to) {
+                if let Some(to) = value.id2node.get(to) {
                     value.graph.add_edge(this_plugin, *to, ());
                 } else if is_required {
                     Err(PluginGraphBuildError::MissingRequiredPlugin(to.clone()))?
