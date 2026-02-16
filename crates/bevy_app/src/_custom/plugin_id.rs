@@ -67,7 +67,7 @@ macro_rules! plugin_deps {
         plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::from($type_name)), $($body)*])
     };
     ([$(,)? ] -> [$($body:tt)*]) => {
-        vec![$($body)*].into()
+        alloc::vec![$($body)*].into()
     };
     ($($tt:tt)*) => {
         plugin_deps!{[$($tt)+] -> []}
