@@ -6,9 +6,9 @@ use alloc::{
 };
 use bevy_platform::collections::hash_map::Entry;
 use bevy_utils::TypeIdMap;
+use core::any::Any;
 use core::any::TypeId;
 use log::{debug, warn};
-use std::any::Any;
 
 /// A macro for generating a well-documented [`PluginGroup`] from a list of [`Plugin`] paths.
 ///

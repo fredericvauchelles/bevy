@@ -117,7 +117,7 @@ impl AppBuilder {
     }
 
     /// Build the app and run it
-    pub fn run(self) -> std::result::Result<AppExit, BevyError> {
+    pub fn run(self) -> Result<AppExit, BevyError> {
         self.run_with(|mut app| app.run())
     }
 
