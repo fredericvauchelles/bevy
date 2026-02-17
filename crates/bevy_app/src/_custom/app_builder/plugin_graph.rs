@@ -10,10 +10,13 @@ use thiserror::Error;
 #[cfg(feature = "trace")]
 use tracing::*;
 
+/// Error when getting a plugin in the [`PluginGraph`]
 #[derive(Debug, Error)]
 pub enum GetPluginError {
+    /// The plugin with provided id is not of the expected type
     #[error("The plugin type with id {0} is not of the expected type {1}")]
     InvalidType(PluginId, &'static str),
+    /// The plugin with given id was not added
     #[error("The plugin with id {0} was not added")]
     PluginNotAdded(PluginId),
 }
