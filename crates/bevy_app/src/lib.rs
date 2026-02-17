@@ -66,6 +66,6 @@ pub mod prelude {
         },
         plugin_deps,
         sub_app::SubApp,
-        Plugin, PluginDependency, PluginGroup, PluginId, TaskPoolOptions, TaskPoolPlugin,
+        Plugin, PluginDependency, PluginGroup, TaskPoolOptions, TaskPoolPlugin,
     };
 }

@@ -26,7 +26,7 @@ mod pipeline_2d;
 #[cfg(feature = "bevy_pbr")]
 mod pipeline_3d;
 
-use bevy_app::{App, Plugin, PluginDependency, PluginId};
+use bevy_app::{App, Plugin, PluginDependency};
 use bevy_ecs::{
     resource::Resource,
     schedule::{IntoScheduleConfigs, SystemSet},

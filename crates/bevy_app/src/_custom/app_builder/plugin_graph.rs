@@ -1,3 +1,6 @@
+//! [`PluginGraph`] is a graph of plugin dependencies, required to build an appropriate order of
+//! plugin execution
+
 use alloc::boxed::Box;
 use bevy_app::*;
 use bevy_ecs::prelude::*;

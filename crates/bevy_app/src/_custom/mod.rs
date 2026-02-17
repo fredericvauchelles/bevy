@@ -1,3 +1,5 @@
+//! Additional code to the bevy project
+
 pub mod app_builder;
 pub mod plugin_id;
 

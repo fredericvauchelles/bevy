@@ -128,7 +128,9 @@ impl_downcast!(Plugin);
 /// Describe a dependency to a plugin
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum PluginDependency {
+    /// A required plugin
     Required(PluginId),
+    /// An optional plugin
     Optional(PluginId),
 }
 

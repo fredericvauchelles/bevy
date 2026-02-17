@@ -1,3 +1,5 @@
+//! App builder is used to build an app with the appropriate plugin order
+
 use crate::*;
 use alloc::vec::Vec;
 use bevy_ecs::error::*;
@@ -7,12 +9,14 @@ use plugin_graph::PluginGraph;
 
 mod plugin_graph;
 
+/// Prelude for [`AppBuilder`]
 pub mod prelude {
     pub use super::AppBuilder;
 }
 
 pub use plugin_graph::GetPluginError;
 
+/// App builder is used to build an app with the appropriate plugin order
 pub struct AppBuilder {
     plugin_graph: PluginGraph,
 }
@@ -100,6 +104,7 @@ impl AppBuilder {
         value
     }
 
+    /// Sets the error handler of the app
     pub fn set_error_handler(&mut self, handler: fn(BevyError, ErrorContext)) -> &mut Self {
         self.add_build(
             move |app| {

@@ -37,7 +37,7 @@ use crate::{
     prelude::EvaluatorId,
 };
 
-use bevy_app::{AnimationSystems, App, Plugin, PluginDependency, PluginId, PostUpdate};
+use bevy_app::{AnimationSystems, App, Plugin, PluginDependency, PostUpdate};
 use bevy_asset::{Asset, AssetApp, AssetEventSystems, Assets};
 use bevy_ecs::{prelude::*, world::EntityMutExcept};
 use bevy_math::FloatOrd;

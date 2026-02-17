@@ -1,3 +1,7 @@
+//! Unique identifier of a plugin instance
+//!
+//! By default you have only one identifier for each plugin that is its [`type_name`]
+
 use crate::Plugin;
 use alloc::borrow::Cow;
 use alloc::string::ToString;
