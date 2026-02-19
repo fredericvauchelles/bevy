@@ -99,7 +99,7 @@ impl Plugin for SpritePlugin {
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!("bevy_render::RenderPlugin")
+        plugin_deps!("bevy_render::RenderPlugin").into()
     }
 }
 

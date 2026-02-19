@@ -6,7 +6,6 @@ use alloc::{
 };
 use bevy_platform::collections::hash_map::Entry;
 use bevy_utils::TypeIdMap;
-use core::any::Any;
 use core::any::TypeId;
 use log::{debug, warn};
 
@@ -558,9 +557,9 @@ impl Extend<Box<dyn Plugin>> for PluginGroupBuilder {
     fn extend<T: IntoIterator<Item = Box<dyn Plugin>>>(&mut self, iter: T) {
         for plugin in iter {
             let target_index = self.order.len();
-            self.order.push(plugin.type_id());
+            self.order.push((*plugin).type_id());
             self.upsert_plugin_entry_state(
-                plugin.type_id(),
+                (*plugin).type_id(),
                 PluginEntry {
                     plugin,
                     enabled: true,

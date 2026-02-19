@@ -440,7 +440,7 @@ impl Plugin for RenderPlugin {
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin)
+        plugin_deps!(AssetPlugin).into()
     }
 }
 

@@ -108,6 +108,6 @@ impl Plugin for TextPlugin {
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(bevy_asset::AssetPlugin)
+        plugin_deps!(bevy_asset::AssetPlugin).into()
     }
 }

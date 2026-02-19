@@ -122,7 +122,7 @@ impl Plugin for GizmoRenderPlugin {
             bevy_render::RenderPlugin,
             bevy_asset::AssetPlugin,
             bevy_gizmos::GizmoPlugin
-        )
+        ).into()
     }
 }
 

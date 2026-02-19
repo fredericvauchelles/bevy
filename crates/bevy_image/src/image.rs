@@ -241,7 +241,7 @@ impl Plugin for ImagePlugin {
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
         use bevy_app::plugin_deps;
-        plugin_deps!(bevy_asset::AssetPlugin, "bevy_render::RenderPlugin")
+        plugin_deps!(bevy_asset::AssetPlugin, "bevy_render::RenderPlugin").into()
     }
 }
 

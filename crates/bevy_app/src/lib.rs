@@ -68,4 +68,6 @@ pub mod prelude {
         sub_app::SubApp,
         Plugin, PluginDependency, PluginGroup, TaskPoolOptions, TaskPoolPlugin,
     };
+
+    pub use bevy_platform;
 }

@@ -2,7 +2,7 @@
 //!
 //! By default you have only one identifier for each plugin that is its [`type_name`]
 
-use crate::Plugin;
+use crate::{Plugin, PluginDependency};
 use alloc::borrow::Cow;
 use alloc::string::ToString;
 use core::any::type_name;
@@ -27,6 +27,16 @@ impl PluginId {
     /// Builds a random [`PluginId`]
     pub fn random() -> Self {
         Self(Cow::Owned(Uuid::new_v4().to_string()))
+    }
+
+    /// Makes this plugin id a required [`PluginDependency`]
+    pub fn required(self) -> PluginDependency {
+        PluginDependency::Required(self)
+    }
+
+    /// Makes this plugin id an optional [`PluginDependency`]
+    pub fn optional(self) -> PluginDependency {
+        PluginDependency::Optional(self)
     }
 }
 
@@ -71,9 +81,35 @@ macro_rules! plugin_deps {
         plugin_deps!([$($tt)*] -> [$(#[$attr])* $crate::prelude::PluginDependency::Optional($crate::prelude::PluginId::from($type_name)), $($body)*])
     };
     ([$(,)? ] -> [$($body:tt)*]) => {
-        alloc::vec![$($body)*].into()
+        $crate::prelude::bevy_platform::prelude::vec![$($body)*]
     };
     ($($tt:tt)*) => {
         plugin_deps!{[$($tt)+] -> []}
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::AppBuilder;
+    use bevy_app::App;
+    struct EmptyPlugin;
+    impl Plugin for EmptyPlugin {
+        fn build(&self, _: &mut App) {}
+        fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+            // can be used in plugin impls
+            plugin_deps!(EmptyPlugin).into()
+        }
+        fn build_before(&'_ self) -> Cow<'_, [PluginDependency]> {
+            // can be used in plugin impls
+            plugin_deps!(EmptyPlugin).into()
+        }
+    }
+
+    #[test]
+    fn can_compile() {
+        let mut app = AppBuilder::default();
+        // can be used in AppBuilder API
+        app.add_build(|_| {}, plugin_deps!(EmptyPlugin), plugin_deps!(?EmptyPlugin));
+    }
 }

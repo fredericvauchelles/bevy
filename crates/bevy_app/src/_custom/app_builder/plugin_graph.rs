@@ -206,7 +206,7 @@ mod tests {
     impl Plugin for PluginA {
         fn build(&self, _: &mut App) {}
         fn build_before(&'_ self) -> Cow<'_, [PluginDependency]> {
-            plugin_deps!(PluginB)
+            plugin_deps!(PluginB).into()
         }
     }
     struct PluginB;
@@ -217,7 +217,7 @@ mod tests {
     impl Plugin for PluginC {
         fn build(&self, _: &mut App) {}
         fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-            plugin_deps!(PluginB)
+            plugin_deps!(PluginB).into()
         }
     }
 

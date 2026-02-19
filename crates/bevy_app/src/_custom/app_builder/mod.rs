@@ -1,7 +1,7 @@
 //! App builder is used to build an app with the appropriate plugin order
 
 use crate::*;
-use alloc::vec::Vec;
+use bevy_platform::prelude::*;
 use bevy_ecs::error::*;
 use bevy_ecs::prelude::BevyError;
 use core::borrow::Borrow;

@@ -108,7 +108,7 @@ impl Plugin for AudioPlugin {
         plugin_deps!(
             #[cfg(any(feature = "mp3", feature = "flac", feature = "wav", feature = "vorbis"))]
             bevy_asset::AssetPlugin
-        )
+        ).into()
     }
 }
 

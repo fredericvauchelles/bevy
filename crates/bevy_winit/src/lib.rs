@@ -159,7 +159,7 @@ impl Plugin for WinitPlugin {
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(WindowPlugin)
+        plugin_deps!(WindowPlugin).into()
     }
 }
 

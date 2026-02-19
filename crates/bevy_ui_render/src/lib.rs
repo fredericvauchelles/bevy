@@ -293,7 +293,8 @@ impl Plugin for UiRenderPlugin {
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        bevy_app::plugin_deps!(bevy_render::RenderPlugin, bevy_sprite::SpritePlugin)
+        use bevy_app::plugin_deps;
+        plugin_deps!(bevy_render::RenderPlugin, bevy_sprite::SpritePlugin).into()
     }
 }
 

@@ -295,7 +295,7 @@ mod tests {
         fn build(&self, _app: &mut App) {}
 
         fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-            plugin_deps!(EmptyPlugin3)
+            plugin_deps!(EmptyPlugin3).into()
         }
     }
 
