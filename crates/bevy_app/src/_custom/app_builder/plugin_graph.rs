@@ -113,6 +113,62 @@ impl PluginGraph {
     pub fn iter_plugins(&self) -> impl Iterator<Item = &dyn Plugin> {
         self.plugins.values().map(core::ops::Deref::deref)
     }
+
+    fn add_plugin_edges(mut self) -> Result<PluginGraph, PluginGraphBuildError> {
+        // add dependencies (edges)
+        for plugin in self.plugins.values() {
+            let plugin_id = plugin.id();
+            let this_plugin = *self.id2node.get(&plugin_id).unwrap();
+            for from in &*plugin.build_after() {
+                let (from, is_required) = match from {
+                    PluginDependency::Required(id) => (id, true),
+                    PluginDependency::Optional(id) => (id, false),
+                };
+                if let Some(from) = self.id2node.get(from) {
+                    self.graph.add_edge(*from, this_plugin, ());
+                } else if is_required {
+                    Err(PluginGraphBuildError::MissingRequiredPlugin(from.clone()))?
+                } else {
+                    #[cfg(feature = "trace")]
+                    warn!(
+                        "Optional dependency not found: {plugin_id} should build after {from} (not found)"
+                    );
+                }
+            }
+            for to in &*plugin.build_before() {
+                let (to, is_required) = match to {
+                    PluginDependency::Required(id) => (id, true),
+                    PluginDependency::Optional(id) => (id, false),
+                };
+                if let Some(to) = self.id2node.get(to) {
+                    self.graph.add_edge(this_plugin, *to, ());
+                } else if is_required {
+                    Err(PluginGraphBuildError::MissingRequiredPlugin(to.clone()))?
+                } else {
+                    #[cfg(feature = "trace")]
+                    warn!(
+                        "Optional dependency not found: {plugin_id} should build before {to} (not found)"
+                    );
+                }
+            }
+        }
+
+        Ok(self)
+    }
+
+    fn try_into_sorted_plugins(self) -> Result<bevy_platform::prelude::Vec<Box<dyn Plugin>>, PluginGraphBuildError> {
+        let mut value = self.add_plugin_edges()?;
+
+        let sorted = petgraph::algo::toposort(&value.graph, None).map_err(|err| {
+            PluginGraphBuildError::CircularDependency(
+                value.plugins.get(&err.node_id()).unwrap().id(),
+            )
+        })?
+            .into_iter()
+            .map(|n| value.plugins.remove(&n).unwrap());
+
+        Ok(sorted.collect())
+    }
 }
 
 #[derive(Debug, Error)]
@@ -126,56 +182,61 @@ pub enum PluginGraphBuildError {
 impl TryFrom<PluginGraph> for PluginGroupBuilder {
     type Error = BevyError;
 
-    fn try_from(mut value: PluginGraph) -> Result<Self, Self::Error> {
-        // add dependencies (edges)
-        for plugin in value.plugins.values() {
-            let plugin_id = plugin.id();
-            let this_plugin = *value.id2node.get(&plugin_id).unwrap();
-            for from in &*plugin.build_after() {
-                let (from, is_required) = match from {
-                    PluginDependency::Required(id) => (id, true),
-                    PluginDependency::Optional(id) => (id, false),
-                };
-                if let Some(from) = value.id2node.get(from) {
-                    value.graph.add_edge(*from, this_plugin, ());
-                } else if is_required {
-                    Err(PluginGraphBuildError::MissingRequiredPlugin(from.clone()))?
-                } else {
-                    #[cfg(feature = "trace")]
-                    warn!(
-                        "Optional dependency not found: {plugin_id} should build after {from} (not found)"
-                    )
-                }
-            }
-            for to in &*plugin.build_before() {
-                let (to, is_required) = match to {
-                    PluginDependency::Required(id) => (id, true),
-                    PluginDependency::Optional(id) => (id, false),
-                };
-                if let Some(to) = value.id2node.get(to) {
-                    value.graph.add_edge(this_plugin, *to, ());
-                } else if is_required {
-                    Err(PluginGraphBuildError::MissingRequiredPlugin(to.clone()))?
-                } else {
-                    #[cfg(feature = "trace")]
-                    warn!(
-                        "Optional dependency not found: {plugin_id} should build before {to} (not found)"
-                    )
-                }
-            }
+    fn try_from(value: PluginGraph) -> Result<Self, Self::Error> {
+        let sorted = value.try_into_sorted_plugins()?;
+
+        #[cfg(feature = "trace")]
+        {
+            use bevy_platform::prelude::*;
+            trace!("Sorted plugins: {}", sorted.iter().map(|n| n.id().to_string()).collect::<Vec<_>>().join(", "));
+        }
+        let mut result = PluginGraphPluginGroup.build();
+        result.extend(sorted);
+        Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::borrow::Cow;
+    use bevy_platform::prelude::*;
+
+    struct PluginA;
+    impl Plugin for PluginA {
+        fn build(&self, _: &mut App) {}
+        fn build_before(&'_ self) -> Cow<'_, [PluginDependency]> {
+            plugin_deps!(PluginB)
+        }
+    }
+    struct PluginB;
+    impl Plugin for PluginB {
+        fn build(&self, _: &mut App) {}
+    }
+    struct PluginC;
+    impl Plugin for PluginC {
+        fn build(&self, _: &mut App) {}
+        fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+            plugin_deps!(PluginB)
+        }
+    }
+
+    #[test]
+    fn build_order() {
+        fn test<M>(plugins: impl Plugins<M>) {
+            let mut plugin_graph = PluginGraph::default();
+            plugin_graph.add_plugins(plugins);
+            let plugins = plugin_graph.try_into_sorted_plugins().unwrap();
+            let plugin_ids = plugins.iter().map(|p| p.id()).collect::<Vec<_>>();
+
+            assert_eq!(vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()], plugin_ids);
         }
 
-        let sorted = petgraph::algo::toposort(&value.graph, None).map_err(|err| {
-            PluginGraphBuildError::CircularDependency(
-                value.plugins.get(&err.node_id()).unwrap().id(),
-            )
-        })?;
-        let mut result = PluginGraphPluginGroup.build();
-        result.extend(
-            sorted
-                .into_iter()
-                .map(|n| value.plugins.remove(&n).unwrap()),
-        );
-        Ok(result)
+        test((PluginA, PluginB, PluginC));
+        test((PluginC, PluginA, PluginB));
+        test((PluginB, PluginC, PluginA));
+        test((PluginA, PluginC, PluginB));
+        test((PluginB, PluginA, PluginC));
+        test((PluginC, PluginB, PluginA));
     }
 }

@@ -42,14 +42,14 @@ impl AppBuilder {
             fn build(&self, app: &mut App) {
                 self.0(app)
             }
+            fn id(&self) -> PluginId {
+                self.3.clone()
+            }
             fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
                 (&*self.2).into()
             }
             fn build_before(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
                 (&*self.1).into()
-            }
-            fn id(&self) -> PluginId {
-                self.3.clone()
             }
         }
         self.add_plugins(FnPlugin(build, before.into(), after.into(), id.clone()))
@@ -123,15 +123,10 @@ impl AppBuilder {
 
     /// Build the app and then execute the runner function
     pub fn run_with(mut self, runner: impl FnOnce(App) -> AppExit) -> Result<AppExit, BevyError> {
-        let pre_builds = self
-            .plugin_graph
-            .iter_plugins()
-            .flat_map(|p| p.pre_build().into_iter())
-            .collect::<Vec<_>>();
+        self.pre_build_recursive();
 
-        for pre_build in pre_builds {
-            pre_build(&mut self);
-        }
+        use bevy_platform::prelude::ToString;
+        log::debug!("App plugins: {}", self.plugin_graph.iter_plugins().map(|p| p.id().to_string()).collect::<Vec<_>>().join(", "));
 
         let mut app = App::new();
         let plugin_group = self.plugin_graph.try_into_plugin_group_builder()?;
@@ -142,6 +137,29 @@ impl AppBuilder {
 
         Ok(runner(app))
     }
+
+    fn pre_build_recursive(&mut self) -> bevy_platform::collections::HashSet<PluginId> {
+        let mut pre_built_plugins = bevy_platform::collections::HashSet::new();
+        loop {
+            let pre_builds = self
+                .plugin_graph
+                .iter_plugins()
+                .filter(|p| !pre_built_plugins.contains(&p.id()))
+                .flat_map(|p| p.pre_build().into_iter().map(|pre_build| (p.id(), pre_build)))
+                .collect::<Vec<_>>();
+
+            if pre_builds.is_empty() {
+                break;
+            }
+
+            for (id, pre_build) in pre_builds {
+                pre_build(self);
+                log::trace!("Pre built plugin: {id}");
+                pre_built_plugins.insert(id);
+            }
+        }
+        pre_built_plugins
+    }
 }
 
 impl Default for AppBuilder {
@@ -149,5 +167,43 @@ impl Default for AppBuilder {
         let mut result = Self::empty();
         result.set_error_handler(error);
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy_platform::collections::*;
+    use bevy_platform::prelude::*;
+
+    struct PluginA;
+    impl Plugin for PluginA {
+        fn build(&self, _: &mut App) {}
+        fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+            Some(Box::new(|app| { app.add_plugins(PluginB); }))
+        }
+    }
+    struct PluginB;
+    impl Plugin for PluginB {
+        fn build(&self, _: &mut App) {}
+        fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+            Some(Box::new(|app| { app.add_plugins(PluginC); }))
+        }
+    }
+    struct PluginC;
+    impl Plugin for PluginC {
+        fn build(&self, _: &mut App) {}
+    }
+
+    #[test]
+    fn pre_build_recursive() {
+        let mut app = AppBuilder::default();
+        app.add_plugins(PluginA);
+
+        let pre_built = app.pre_build_recursive();
+        let plugin_ids = app.plugin_graph.iter_plugins().map(Plugin::id).collect::<HashSet<_>>();
+
+        assert_eq!(pre_built, vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>()].into_iter().collect());
+        assert!(plugin_ids.is_superset(&vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()].into_iter().collect()));
     }
 }

@@ -149,6 +149,7 @@ macro_rules! plugin_group {
             ///
             $(#[doc = $post_doc])+
         )?
+        #[derive(Clone)]
         $vis struct $group;
 
         impl $crate::PluginGroup for $group {
