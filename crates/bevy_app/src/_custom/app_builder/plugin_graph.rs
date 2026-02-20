@@ -12,6 +12,58 @@ use thiserror::Error;
 #[cfg(feature = "trace")]
 use tracing::*;
 
+/// Patch plugin dependencies
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
+pub struct PluginDependencyPatch {
+    patches: HashMap<PluginId, HashSet<UpdatePluginDependency>>,
+}
+impl PluginDependencyPatch {
+    /// Creates a new [`PluginDependencyPatch`]
+    pub fn new(patches: impl IntoIterator<Item=(PluginId, HashSet<UpdatePluginDependency>)>) -> Self {
+        Self {
+            patches: patches.into_iter().collect()
+        }
+    }
+
+    /// Adds a dependency
+    pub fn add(&mut self, id: PluginId, dep: UpdatePluginDependency) {
+        self.patches.entry(id).or_default().insert(dep);
+    }
+
+    /// Removes a dependency
+    pub fn remove(&mut self, id: &PluginId, dep: &UpdatePluginDependency) {
+        self.patches.get_mut(id).map(|entry| entry.remove(dep));
+    }
+}
+impl Extend<(PluginId, UpdatePluginDependency)> for PluginDependencyPatch {
+    fn extend<T: IntoIterator<Item=(PluginId, UpdatePluginDependency)>>(&mut self, iter: T) {
+        for (id, dep) in iter {
+            self.add(id, dep);
+        }
+    }
+}
+impl Extend<(PluginId, HashSet<UpdatePluginDependency>)> for PluginDependencyPatch {
+    fn extend<T: IntoIterator<Item=(PluginId, HashSet<UpdatePluginDependency>)>>(&mut self, iter: T) {
+        for (id, dep) in iter {
+            self.patches.entry(id).or_default().extend(dep)
+        }
+    }
+}
+impl FromIterator<(PluginId, UpdatePluginDependency)> for PluginDependencyPatch {
+    fn from_iter<T: IntoIterator<Item=(PluginId, UpdatePluginDependency)>>(iter: T) -> Self {
+        let mut val = Self::default();
+        val.extend(iter);
+        val
+    }
+}
+impl FromIterator<(PluginId, HashSet<UpdatePluginDependency>)> for PluginDependencyPatch {
+    fn from_iter<T: IntoIterator<Item=(PluginId, HashSet<UpdatePluginDependency>)>>(iter: T) -> Self {
+        let mut val = Self::default();
+        val.extend(iter);
+        val
+    }
+}
+
 /// Error when getting a plugin in the [`PluginGraph`]
 #[derive(Debug, Error)]
 pub enum GetPluginError {
@@ -74,6 +126,7 @@ pub struct PluginGraph {
 }
 
 /// Describe how to update a plugin dependency
+#[derive(Clone, Hash, Debug, Eq, PartialEq)]
 pub enum UpdatePluginDependency {
     /// Add dependency in build_before
     AddBefore(PluginDependency),
@@ -133,7 +186,14 @@ impl PluginGraph {
         self
     }
 
-    pub fn update_plugin_dependencies(&mut self, id: &PluginId, patches: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
+    pub fn patch_plugin_dependencies(&mut self, patch: &PluginDependencyPatch) -> &mut Self {
+        for (id, patch) in &patch.patches {
+            self.update_plugin_dependencies(id, patch.iter().cloned());
+        }
+        self
+    }
+
+    fn update_plugin_dependencies(&mut self, id: &PluginId, patches: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
         if let Some(n) = self.id2node.get(id) {
             let entry = self.plugins.get_mut(n).expect("A node entry must have the corresponding plugin entry");
             for patch in patches {
@@ -336,18 +396,19 @@ mod tests {
             let mut plugin_graph = PluginGraph::default();
             plugin_graph.add_plugins(plugins);
 
-            // Patch
-            plugin_graph.update_plugin_dependencies(
-                &PluginId::of::<PluginA>(),
-                plugin_deps_patch!(build_before: [-PluginB], build_after: [+PluginC]),
-            );
-            plugin_graph.update_plugin_dependencies(
-                &PluginId::of::<PluginB>(),
-                plugin_deps_patch!(build_before: [+PluginC]),
-            );
-            plugin_graph.update_plugin_dependencies(
-                &PluginId::of::<PluginC>(),
-                plugin_deps_patch!(build_after: [-PluginB]),
+            plugin_graph.patch_plugin_dependencies(
+                &plugin_deps_patch! {
+                    PluginA: {
+                        build_before: [-PluginB],
+                        build_after: [+PluginC],
+                    },
+                    PluginB: {
+                        build_before: [+PluginC]
+                    },
+                    PluginC: {
+                        build_after: [-PluginB]
+                    },
+                }
             );
 
 

@@ -1,7 +1,7 @@
 //! App builder is used to build an app with the appropriate plugin order
 
 use crate::*;
-pub use bevy_app::app_builder::plugin_graph::UpdatePluginDependency;
+pub use bevy_app::app_builder::plugin_graph::{PluginDependencyPatch, UpdatePluginDependency};
 use bevy_ecs::error::*;
 use bevy_ecs::prelude::BevyError;
 use bevy_platform::prelude::*;
@@ -12,7 +12,7 @@ mod plugin_graph;
 
 /// Prelude for [`AppBuilder`]
 pub mod prelude {
-    pub use super::{AppBuilder, UpdatePluginDependency};
+    pub use super::{AppBuilder, PluginDependencyPatch, UpdatePluginDependency};
 }
 
 pub use plugin_graph::GetPluginError;
@@ -82,23 +82,14 @@ impl AppBuilder {
         self
     }
 
-    /// Update a plugin dependencies
+    /// Patch plugins dependencies
     ///
     /// This is useful to patch dependencies of a third party plugin so it matches
     /// the project's plugin dependencies
-    pub fn update_plugin_dependencies_with_id(&mut self, id: &PluginId, dependencies: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
-        self.plugin_graph.update_plugin_dependencies(id, dependencies);
+    pub fn patch_plugin_dependencies(&mut self, patch: &PluginDependencyPatch) -> &mut Self {
+        self.plugin_graph.patch_plugin_dependencies(patch);
         self
     }
-
-    /// Update a plugin dependencies
-    ///
-    /// This is useful to patch dependencies of a third party plugin so it matches
-    /// the project's plugin dependencies
-    pub fn update_plugin_dependencies<P: Plugin>(&mut self, dependencies: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
-        self.update_plugin_dependencies_with_id(&PluginId::of::<P>(), dependencies)
-    }
-
 
     /// get a plugin
     pub fn get_plugin<P: Plugin>(&self, id: impl Borrow<PluginId>) -> Result<&P, GetPluginError> {
