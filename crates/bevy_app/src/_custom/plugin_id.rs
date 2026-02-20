@@ -58,7 +58,7 @@ impl<P: Into<Cow<'static, str>>> From<P> for PluginId {
 /// # mod bevy_asset {
 /// #     pub struct AssetPlugin;
 /// # }
-/// plugin_ids!(bevy_asset::AssetPlugin, "bevy_render::RenderPlugin", ?ImagePlugin, ?"my::other::plugin")
+/// plugin_deps!(bevy_asset::AssetPlugin, "bevy_render::RenderPlugin", ?ImagePlugin, ?"my::other::plugin")
 /// ```
 #[macro_export]
 macro_rules! plugin_deps {

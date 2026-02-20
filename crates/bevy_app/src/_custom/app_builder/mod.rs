@@ -1,9 +1,10 @@
 //! App builder is used to build an app with the appropriate plugin order
 
 use crate::*;
-use bevy_platform::prelude::*;
+pub use bevy_app::app_builder::plugin_graph::UpdatePluginDependency;
 use bevy_ecs::error::*;
 use bevy_ecs::prelude::BevyError;
+use bevy_platform::prelude::*;
 use core::borrow::Borrow;
 use plugin_graph::PluginGraph;
 
@@ -11,7 +12,7 @@ mod plugin_graph;
 
 /// Prelude for [`AppBuilder`]
 pub mod prelude {
-    pub use super::AppBuilder;
+    pub use super::{AppBuilder, UpdatePluginDependency};
 }
 
 pub use plugin_graph::GetPluginError;
@@ -27,6 +28,14 @@ impl AppBuilder {
     pub fn add_plugins<M>(&mut self, plugins: impl Plugins<M>) -> &mut Self {
         self.plugin_graph.add_plugins(plugins);
         self
+    }
+
+    /// Add plugins to the graph
+    ///
+    /// If a plugin with the same [`PluginId`] is already added, then it will be overwritten.
+    pub fn init_plugins<P, M>(&mut self) -> &mut Self 
+    where P: Default + Plugins<M> {
+        self.add_plugins(P::default())
     }
 
     /// Add a build fn as a plugin with provided id.
@@ -72,6 +81,24 @@ impl AppBuilder {
         self.plugin_graph.upset_plugins(plugins);
         self
     }
+
+    /// Update a plugin dependencies
+    ///
+    /// This is useful to patch dependencies of a third party plugin so it matches
+    /// the project's plugin dependencies
+    pub fn update_plugin_dependencies_with_id(&mut self, id: &PluginId, dependencies: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
+        self.plugin_graph.update_plugin_dependencies(id, dependencies);
+        self
+    }
+
+    /// Update a plugin dependencies
+    ///
+    /// This is useful to patch dependencies of a third party plugin so it matches
+    /// the project's plugin dependencies
+    pub fn update_plugin_dependencies<P: Plugin>(&mut self, dependencies: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
+        self.update_plugin_dependencies_with_id(&PluginId::of::<P>(), dependencies)
+    }
+
 
     /// get a plugin
     pub fn get_plugin<P: Plugin>(&self, id: impl Borrow<PluginId>) -> Result<&P, GetPluginError> {
@@ -126,7 +153,7 @@ impl AppBuilder {
         self.pre_build_recursive();
 
         use bevy_platform::prelude::ToString;
-        log::debug!("App plugins: {}", self.plugin_graph.iter_plugins().map(|p| p.id().to_string()).collect::<Vec<_>>().join(", "));
+        log::debug!("App plugins: {}", self.plugin_graph.iter_plugins().map(|p| p.plugin().id().to_string()).collect::<Vec<_>>().join(", "));
 
         let mut app = App::new();
         let plugin_group = self.plugin_graph.try_into_plugin_group_builder()?;
@@ -144,8 +171,8 @@ impl AppBuilder {
             let pre_builds = self
                 .plugin_graph
                 .iter_plugins()
-                .filter(|p| !pre_built_plugins.contains(&p.id()))
-                .flat_map(|p| p.pre_build().into_iter().map(|pre_build| (p.id(), pre_build)))
+                .filter(|p| !pre_built_plugins.contains(&p.plugin().id()))
+                .flat_map(|p| p.plugin().pre_build().into_iter().map(|pre_build| (p.plugin().id(), pre_build)))
                 .collect::<Vec<_>>();
 
             if pre_builds.is_empty() {
@@ -174,7 +201,6 @@ impl Default for AppBuilder {
 mod tests {
     use super::*;
     use bevy_platform::collections::*;
-    use bevy_platform::prelude::*;
 
     struct PluginA;
     impl Plugin for PluginA {
@@ -201,7 +227,7 @@ mod tests {
         app.add_plugins(PluginA);
 
         let pre_built = app.pre_build_recursive();
-        let plugin_ids = app.plugin_graph.iter_plugins().map(Plugin::id).collect::<HashSet<_>>();
+        let plugin_ids = app.plugin_graph.iter_plugins().map(|entry| entry.plugin().id()).collect::<HashSet<_>>();
 
         assert_eq!(pre_built, vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>()].into_iter().collect());
         assert!(plugin_ids.is_superset(&vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()].into_iter().collect()));

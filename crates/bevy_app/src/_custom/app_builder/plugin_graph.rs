@@ -4,7 +4,9 @@
 use alloc::boxed::Box;
 use bevy_app::*;
 use bevy_ecs::prelude::*;
-use bevy_platform::collections::HashMap;
+use bevy_platform::collections::*;
+use bevy_platform::prelude::*;
+use core::ops::{Deref, DerefMut};
 use petgraph::prelude::NodeIndex;
 use thiserror::Error;
 #[cfg(feature = "trace")]
@@ -21,11 +23,66 @@ pub enum GetPluginError {
     PluginNotAdded(PluginId),
 }
 
+pub struct PluginEntry {
+    plugin: Box<dyn Plugin>,
+    add_before: HashSet<PluginDependency>,
+    add_after: HashSet<PluginDependency>,
+    remove_before: HashSet<PluginDependency>,
+    remove_after: HashSet<PluginDependency>,
+}
+impl PluginEntry {
+    pub fn plugin(&self) -> &dyn Plugin {
+        self.plugin.deref()
+    }
+    pub fn build_before(&self) -> impl IntoIterator<Item=PluginDependency> {
+        self.plugin().build_before().iter()
+            .filter(|id| !self.remove_before.contains(*id))
+            .chain(self.add_before.iter())
+            .cloned()
+            .collect::<HashSet<_>>()
+    }
+
+    pub fn build_after(&self) -> impl IntoIterator<Item=PluginDependency> {
+        self.plugin().build_after().iter()
+            .filter(|id| !self.remove_after.contains(*id))
+            .chain(self.add_after.iter())
+            .cloned()
+            .collect::<HashSet<_>>()
+    }
+
+    fn new(plugin: Box<dyn Plugin>) -> Self {
+        Self {
+            plugin,
+            remove_before: Default::default(),
+            remove_after: Default::default(),
+            add_before: Default::default(),
+            add_after: Default::default(),
+        }
+    }
+}
+impl From<PluginEntry> for Box<dyn Plugin> {
+    fn from(value: PluginEntry) -> Self {
+        value.plugin
+    }
+}
+
 #[derive(Default)]
 pub struct PluginGraph {
-    plugins: HashMap<NodeIndex, Box<dyn Plugin>>,
+    plugins: HashMap<NodeIndex, PluginEntry>,
     id2node: HashMap<PluginId, NodeIndex>,
     graph: petgraph::Graph<PluginId, ()>,
+}
+
+/// Describe how to update a plugin dependency
+pub enum UpdatePluginDependency {
+    /// Add dependency in build_before
+    AddBefore(PluginDependency),
+    /// Add dependency in build_after
+    AddAfter(PluginDependency),
+    /// Remove dependency in build_before
+    RemoveBefore(PluginDependency),
+    /// Remove dependency in build_after
+    RemoveAfter(PluginDependency),
 }
 
 struct PluginGraphPluginGroup;
@@ -45,22 +102,55 @@ impl PluginGraph {
             }
 
             let node = self.graph.add_node(id.clone());
-            self.plugins.insert(node, plugin);
+            self.plugins.insert(node, PluginEntry::new(plugin));
             self.id2node.insert(id, node);
         }
         self
     }
 
+    /// Update plugins or insert them. During update, the patched dependencies are untouched
     pub fn upset_plugins<M>(&mut self, plugins: impl Plugins<M>) -> &mut Self {
         let plugins = plugins.into_boxed_vec();
         for plugin in plugins {
             let id = plugin.id();
             if let Some(node) = self.id2node.get(&id) {
-                *self.plugins.get_mut(node).unwrap() = plugin;
+                let Some(entry) = self.plugins.get_mut(node) else {
+                    unreachable!()
+                };
+                if entry.plugin().type_id() != plugin.deref().type_id() {
+                    log::error!("Tried to update Plugin id {id} (type: {}) with another \
+                        plugin of a different type. (new type: {}). This is forbidden",
+                        entry.plugin().name(), plugin.name());
+                    continue
+                }
+                entry.plugin = plugin;
             } else {
                 let node = self.graph.add_node(id.clone());
-                self.plugins.insert(node, plugin);
+                self.plugins.insert(node, PluginEntry::new(plugin));
                 self.id2node.insert(id, node);
+            }
+        }
+        self
+    }
+
+    pub fn update_plugin_dependencies(&mut self, id: &PluginId, patches: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
+        if let Some(n) = self.id2node.get(id) {
+            let entry = self.plugins.get_mut(n).expect("A node entry must have the corresponding plugin entry");
+            for patch in patches {
+                match patch {
+                    UpdatePluginDependency::AddBefore(id) => {
+                        entry.add_before.insert(id);
+                    }
+                    UpdatePluginDependency::AddAfter(id) => {
+                        entry.add_after.insert(id);
+                    }
+                    UpdatePluginDependency::RemoveBefore(id) => {
+                        entry.remove_before.insert(id);
+                    }
+                    UpdatePluginDependency::RemoveAfter(id) => {
+                        entry.remove_after.insert(id);
+                    }
+                }
             }
         }
         self
@@ -78,10 +168,10 @@ impl PluginGraph {
         let Some(node) = self.id2node.get(id) else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
-        let Some(plugin) = self.plugins.get(node) else {
+        let Some(entry) = self.plugins.get(node) else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
-        let Some(plugin) = plugin.downcast_ref::<P>() else {
+        let Some(plugin) = entry.plugin().downcast_ref::<P>() else {
             return Err(GetPluginError::InvalidType(
                 id.clone(),
                 core::any::type_name::<P>(),
@@ -94,10 +184,10 @@ impl PluginGraph {
         let Some(node) = self.id2node.get(id) else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
-        let Some(plugin) = self.plugins.get_mut(node) else {
+        let Some(entry) = self.plugins.get_mut(node) else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
-        let Some(plugin) = plugin.downcast_mut::<P>() else {
+        let Some(plugin) = entry.plugin.deref_mut().downcast_mut::<P>() else {
             return Err(GetPluginError::InvalidType(
                 id.clone(),
                 core::any::type_name::<P>(),
@@ -110,21 +200,21 @@ impl PluginGraph {
         self.try_into()
     }
 
-    pub fn iter_plugins(&self) -> impl Iterator<Item = &dyn Plugin> {
-        self.plugins.values().map(core::ops::Deref::deref)
+    pub fn iter_plugins(&self) -> impl Iterator<Item=&PluginEntry> {
+        self.plugins.values()
     }
 
     fn add_plugin_edges(mut self) -> Result<PluginGraph, PluginGraphBuildError> {
         // add dependencies (edges)
-        for plugin in self.plugins.values() {
-            let plugin_id = plugin.id();
+        for entry in self.plugins.values() {
+            let plugin_id = entry.plugin().id();
             let this_plugin = *self.id2node.get(&plugin_id).unwrap();
-            for from in &*plugin.build_after() {
+            for from in entry.build_after() {
                 let (from, is_required) = match from {
                     PluginDependency::Required(id) => (id, true),
                     PluginDependency::Optional(id) => (id, false),
                 };
-                if let Some(from) = self.id2node.get(from) {
+                if let Some(from) = self.id2node.get(&from) {
                     self.graph.add_edge(*from, this_plugin, ());
                 } else if is_required {
                     Err(PluginGraphBuildError::MissingRequiredPlugin(from.clone()))?
@@ -135,12 +225,12 @@ impl PluginGraph {
                     );
                 }
             }
-            for to in &*plugin.build_before() {
+            for to in entry.build_before() {
                 let (to, is_required) = match to {
                     PluginDependency::Required(id) => (id, true),
                     PluginDependency::Optional(id) => (id, false),
                 };
-                if let Some(to) = self.id2node.get(to) {
+                if let Some(to) = self.id2node.get(&to) {
                     self.graph.add_edge(this_plugin, *to, ());
                 } else if is_required {
                     Err(PluginGraphBuildError::MissingRequiredPlugin(to.clone()))?
@@ -156,12 +246,12 @@ impl PluginGraph {
         Ok(self)
     }
 
-    fn try_into_sorted_plugins(self) -> Result<bevy_platform::prelude::Vec<Box<dyn Plugin>>, PluginGraphBuildError> {
+    fn try_into_sorted_plugins(self) -> Result<Vec<PluginEntry>, PluginGraphBuildError> {
         let mut value = self.add_plugin_edges()?;
 
         let sorted = petgraph::algo::toposort(&value.graph, None).map_err(|err| {
             PluginGraphBuildError::CircularDependency(
-                value.plugins.get(&err.node_id()).unwrap().id(),
+                value.plugins.get(&err.node_id()).unwrap().plugin().id(),
             )
         })?
             .into_iter()
@@ -188,10 +278,10 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
         #[cfg(feature = "trace")]
         {
             use bevy_platform::prelude::*;
-            trace!("Sorted plugins: {}", sorted.iter().map(|n| n.id().to_string()).collect::<Vec<_>>().join(", "));
+            trace!("Sorted plugins: {}", sorted.iter().map(|n| n.plugin().id().to_string()).collect::<Vec<_>>().join(", "));
         }
         let mut result = PluginGraphPluginGroup.build();
-        result.extend(sorted);
+        result.extend(sorted.into_iter().map(Into::into));
         Ok(result)
     }
 }
@@ -200,7 +290,7 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
 mod tests {
     use super::*;
     use alloc::borrow::Cow;
-    use bevy_platform::prelude::*;
+    use bevy_app_macros::plugin_deps_patch;
 
     struct PluginA;
     impl Plugin for PluginA {
@@ -227,9 +317,44 @@ mod tests {
             let mut plugin_graph = PluginGraph::default();
             plugin_graph.add_plugins(plugins);
             let plugins = plugin_graph.try_into_sorted_plugins().unwrap();
-            let plugin_ids = plugins.iter().map(|p| p.id()).collect::<Vec<_>>();
+            let plugin_ids = plugins.iter().map(|p| p.plugin().id()).collect::<Vec<_>>();
 
             assert_eq!(vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()], plugin_ids);
+        }
+
+        test((PluginA, PluginB, PluginC));
+        test((PluginC, PluginA, PluginB));
+        test((PluginB, PluginC, PluginA));
+        test((PluginA, PluginC, PluginB));
+        test((PluginB, PluginA, PluginC));
+        test((PluginC, PluginB, PluginA));
+    }
+
+    #[test]
+    fn build_order_with_patch() {
+        fn test<M>(plugins: impl Plugins<M>) {
+            let mut plugin_graph = PluginGraph::default();
+            plugin_graph.add_plugins(plugins);
+
+            // Patch
+            plugin_graph.update_plugin_dependencies(
+                &PluginId::of::<PluginA>(),
+                plugin_deps_patch!(build_before: [-PluginB], build_after: [+PluginC]),
+            );
+            plugin_graph.update_plugin_dependencies(
+                &PluginId::of::<PluginB>(),
+                plugin_deps_patch!(build_before: [+PluginC]),
+            );
+            plugin_graph.update_plugin_dependencies(
+                &PluginId::of::<PluginC>(),
+                plugin_deps_patch!(build_after: [-PluginB]),
+            );
+
+
+            let plugins = plugin_graph.try_into_sorted_plugins().unwrap();
+            let plugin_ids = plugins.iter().map(|p| p.plugin().id()).collect::<Vec<_>>();
+
+            assert_eq!(vec![PluginId::of::<PluginB>(), PluginId::of::<PluginC>(), PluginId::of::<PluginA>()], plugin_ids);
         }
 
         test((PluginA, PluginB, PluginC));

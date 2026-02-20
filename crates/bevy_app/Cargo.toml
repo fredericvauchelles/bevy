@@ -89,6 +89,7 @@ bevy_reflect = { path = "../bevy_reflect", version = "0.18.0", default-features 
 bevy_utils = { path = "../bevy_utils", version = "0.18.0", default-features = false }
 bevy_tasks = { path = "../bevy_tasks", version = "0.18.0", default-features = false }
 bevy_platform = { path = "../bevy_platform", version = "0.18.0", default-features = false }
+bevy_app_macros = { path = "bevy_app_macros" }
 
 # other
 downcast-rs = { version = "2", default-features = false }
