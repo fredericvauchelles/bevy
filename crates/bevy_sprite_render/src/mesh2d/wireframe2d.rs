@@ -2,7 +2,9 @@ use crate::{
     init_mesh_2d_pipeline, DrawMesh2d, Mesh2dPipeline, Mesh2dPipelineKey, RenderMesh2dInstances,
     SetMesh2dBindGroup, SetMesh2dViewBindGroup, ViewKeyCache, ViewSpecializationTicks,
 };
-use bevy_app::{App, Plugin, PostUpdate, Startup, Update};
+use alloc::borrow::Cow;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PostUpdate, Startup, Update};
 use bevy_asset::{
     embedded_asset, load_embedded_asset, prelude::AssetChanged, AsAssetId, Asset, AssetApp,
     AssetEventSystems, AssetId, AssetServer, Assets, Handle, UntypedAssetId,
@@ -23,6 +25,7 @@ use bevy_platform::{
     hash::FixedHasher,
 };
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
+use bevy_render::view::screenshot::ScreenshotPlugin;
 use bevy_render::{
     batching::gpu_preprocessing::GpuPreprocessingMode,
     camera::ExtractedCamera,
@@ -81,10 +84,7 @@ impl Plugin for Wireframe2dPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "wireframe2d.wgsl");
 
-        app.add_plugins((
-            BinnedRenderPhasePlugin::<Wireframe2dPhaseItem, Mesh2dPipeline>::new(self.debug_flags),
-            RenderAssetPlugin::<RenderWireframeMaterial>::default(),
-        ))
+        app
         .init_asset::<Wireframe2dMaterial>()
         .init_resource::<SpecializedMeshPipelines<Wireframe2dPipeline>>()
         .init_resource::<Wireframe2dConfig>()
@@ -151,6 +151,19 @@ impl Plugin for Wireframe2dPlugin {
                         .after(prepare_assets::<RenderWireframeMaterial>),
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                BinnedRenderPhasePlugin::<Wireframe2dPhaseItem, Mesh2dPipeline>::new(self.debug_flags),
+                RenderAssetPlugin::<RenderWireframeMaterial>::default(),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(?RenderPlugin).into()
     }
 }
 

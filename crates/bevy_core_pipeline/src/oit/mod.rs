@@ -14,7 +14,7 @@ use bevy_render::{
     render_resource::{BufferUsages, BufferVec, DynamicUniformBuffer, ShaderType, TextureUsages},
     renderer::{RenderDevice, RenderQueue},
     view::Msaa,
-    Render, RenderApp, RenderStartup, RenderSystems,
+    Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems,
 };
 use bevy_shader::load_shader_library;
 use bevy_window::PrimaryWindow;
@@ -22,6 +22,7 @@ use resolve::{
     node::{OitResolveNode, OitResolvePass},
     OitResolvePlugin,
 };
+use std::borrow::Cow;
 use tracing::{trace, warn};
 
 use crate::core_3d::graph::{Core3d, Node3d};
@@ -99,12 +100,8 @@ impl Plugin for OrderIndependentTransparencyPlugin {
     fn build(&self, app: &mut App) {
         load_shader_library!(app, "oit_draw.wgsl");
 
-        app.add_plugins((
-            ExtractComponentPlugin::<OrderIndependentTransparencySettings>::default(),
-            OitResolvePlugin,
-        ))
-        .add_systems(Update, check_msaa)
-        .add_systems(Last, configure_depth_texture_usages);
+        app.add_systems(Update, check_msaa)
+            .add_systems(Last, configure_depth_texture_usages);
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -127,6 +124,19 @@ impl Plugin for OrderIndependentTransparencyPlugin {
                     Node3d::EndMainPass,
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractComponentPlugin::<OrderIndependentTransparencySettings>::default(),
+                OitResolvePlugin,
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

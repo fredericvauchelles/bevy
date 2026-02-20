@@ -7,6 +7,7 @@
 
 extern crate alloc;
 
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{Plugin, PluginDependency};
 use contrast_adaptive_sharpening::CasPlugin;
 use fxaa::FxaaPlugin;
@@ -25,15 +26,19 @@ pub mod taa;
 pub struct AntiAliasPlugin;
 
 impl Plugin for AntiAliasPlugin {
-    fn build(&self, app: &mut bevy_app::App) {
-        app.add_plugins((
-            FxaaPlugin,
-            SmaaPlugin,
-            TemporalAntiAliasPlugin,
-            CasPlugin,
-            #[cfg(all(feature = "dlss", not(feature = "force_disable_dlss")))]
-            dlss::DlssPlugin,
-        ));
+    fn build(&self, _: &mut bevy_app::App) {}
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                FxaaPlugin,
+                SmaaPlugin,
+                TemporalAntiAliasPlugin,
+                CasPlugin,
+                #[cfg(all(feature = "dlss", not(feature = "force_disable_dlss")))]
+                dlss::DlssPlugin,
+            ));
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

@@ -1,5 +1,5 @@
 use crate::FullscreenShader;
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_ecs::prelude::*;
 use bevy_render::{
@@ -8,10 +8,11 @@ use bevy_render::{
         *,
     },
     renderer::RenderDevice,
-    RenderApp, RenderStartup,
+    RenderApp, RenderPlugin, RenderStartup,
 };
 use bevy_shader::Shader;
 use bevy_utils::default;
+use std::borrow::Cow;
 
 /// Adds support for specialized "blit pipelines", which can be used to write one texture to another.
 pub struct BlitPlugin;
@@ -28,6 +29,10 @@ impl Plugin for BlitPlugin {
             .allow_ambiguous_resource::<SpecializedRenderPipelines<BlitPipeline>>()
             .init_resource::<SpecializedRenderPipelines<BlitPipeline>>()
             .add_systems(RenderStartup, init_blit_pipeline);
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

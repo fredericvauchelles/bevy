@@ -13,8 +13,9 @@ use bevy_render::{
     renderer::RenderDevice,
     texture::{CachedTexture, TextureCache},
     view::ViewTarget,
-    Render, RenderApp, RenderStartup, RenderSystems,
+    Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems,
 };
+use std::borrow::Cow;
 
 use super::DEFERRED_LIGHTING_PASS_ID_DEPTH_FORMAT;
 use bevy_ecs::query::QueryItem;
@@ -38,6 +39,10 @@ impl Plugin for CopyDeferredLightingIdPlugin {
                 Render,
                 (prepare_deferred_lighting_id_textures.in_set(RenderSystems::PrepareResources),),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -1,4 +1,6 @@
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer};
 use bevy_camera::{Camera, Camera3d};
 use bevy_core_pipeline::{
@@ -19,26 +21,15 @@ use bevy_ecs::{
 use bevy_image::{BevyDefault as _, ToExtents};
 use bevy_math::vec2;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    camera::{ExtractedCamera, MipBias, TemporalJitter},
-    diagnostic::RecordDiagnostics,
-    render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner},
-    render_resource::{
-        binding_types::{sampler, texture_2d, texture_depth_2d},
-        BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
-        CachedRenderPipelineId, Canonical, ColorTargetState, ColorWrites, FilterMode,
-        FragmentState, Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
-        RenderPipeline, RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor,
-        ShaderStages, Specializer, SpecializerKey, TextureDescriptor, TextureDimension,
-        TextureFormat, TextureSampleType, TextureUsages, Variants,
-    },
-    renderer::{RenderContext, RenderDevice},
-    sync_component::SyncComponentPlugin,
-    sync_world::RenderEntity,
-    texture::{CachedTexture, TextureCache},
-    view::{ExtractedView, Msaa, ViewTarget},
-    ExtractSchedule, MainWorld, Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{camera::{ExtractedCamera, MipBias, TemporalJitter}, diagnostic::RecordDiagnostics, render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner}, render_resource::{
+    binding_types::{sampler, texture_2d, texture_depth_2d},
+    BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
+    CachedRenderPipelineId, Canonical, ColorTargetState, ColorWrites, FilterMode,
+    FragmentState, Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
+    RenderPipeline, RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor,
+    ShaderStages, Specializer, SpecializerKey, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureSampleType, TextureUsages, Variants,
+}, renderer::{RenderContext, RenderDevice}, sync_component::SyncComponentPlugin, sync_world::RenderEntity, texture::{CachedTexture, TextureCache}, view::{ExtractedView, Msaa, ViewTarget}, ExtractSchedule, MainWorld, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use bevy_utils::default;
 use tracing::warn;
 
@@ -51,8 +42,6 @@ pub struct TemporalAntiAliasPlugin;
 impl Plugin for TemporalAntiAliasPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "taa.wgsl");
-
-        app.add_plugins(SyncComponentPlugin::<TemporalAntiAliasing>::default());
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -79,6 +68,16 @@ impl Plugin for TemporalAntiAliasPlugin {
                     Node3d::Tonemapping,
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(SyncComponentPlugin::<TemporalAntiAliasing>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

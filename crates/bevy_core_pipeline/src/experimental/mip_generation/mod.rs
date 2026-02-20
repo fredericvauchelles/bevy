@@ -5,13 +5,11 @@
 //! designed only for power-of-two texture sizes and is slightly incorrect for
 //! non-power-of-two depth buffer sizes.
 
-use core::array;
-
 use crate::core_3d::{
     graph::{Core3d, Node3d},
     prepare_core_3d_depth_textures,
 };
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, Handle};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -27,7 +25,7 @@ use bevy_ecs::{
 use bevy_math::{uvec2, UVec2, Vec4Swizzles as _};
 use bevy_render::{
     batching::gpu_preprocessing::GpuPreprocessingSupport,
-    render_resource::BindGroupLayoutDescriptor, RenderStartup,
+    render_resource::BindGroupLayoutDescriptor, RenderPlugin, RenderStartup,
 };
 use bevy_render::{
     experimental::occlusion_culling::{
@@ -51,6 +49,8 @@ use bevy_render::{
 use bevy_shader::Shader;
 use bevy_utils::default;
 use bitflags::bitflags;
+use core::array;
+use std::borrow::Cow;
 use tracing::debug;
 
 /// Identifies the `downsample_depth.wgsl` shader.
@@ -119,6 +119,10 @@ impl Plugin for MipGenerationPlugin {
                     .run_if(resource_exists::<DownsampleDepthPipelines>)
                     .after(prepare_core_3d_depth_textures),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

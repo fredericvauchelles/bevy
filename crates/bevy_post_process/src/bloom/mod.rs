@@ -9,6 +9,7 @@ use crate::bloom::{
     downsampling_pipeline::init_bloom_downsampling_pipeline,
     upsampling_pipeline::init_bloom_upscaling_pipeline,
 };
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{App, Plugin};
 use bevy_asset::embedded_asset;
 use bevy_color::{Gray, LinearRgba};
@@ -49,11 +50,6 @@ pub struct BloomPlugin;
 impl Plugin for BloomPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "bloom.wgsl");
-
-        app.add_plugins((
-            ExtractComponentPlugin::<Bloom>::default(),
-            UniformComponentPlugin::<BloomUniforms>::default(),
-        ));
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -97,6 +93,15 @@ impl Plugin for BloomPlugin {
                     Node2d::Tonemapping,
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractComponentPlugin::<Bloom>::default(),
+                UniformComponentPlugin::<BloomUniforms>::default(),
+            ));
+        }))
     }
 }
 

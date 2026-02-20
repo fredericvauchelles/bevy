@@ -37,7 +37,8 @@ mod environment;
 mod node;
 pub mod resources;
 
-use bevy_app::{App, Plugin, Update};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, Update};
 use bevy_asset::{embedded_asset, AssetId, Handle};
 use bevy_camera::Camera3d;
 use bevy_core_pipeline::core_3d::graph::Node3d;
@@ -49,12 +50,7 @@ use bevy_ecs::{
 };
 use bevy_math::{UVec2, UVec3, Vec3};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    extract_component::UniformComponentPlugin,
-    render_resource::{DownlevelFlags, ShaderType, SpecializedRenderPipelines},
-    view::Hdr,
-    RenderStartup,
-};
+use bevy_render::{extract_component::UniformComponentPlugin, render_resource::{DownlevelFlags, ShaderType, SpecializedRenderPipelines}, view::Hdr, RenderPlugin, RenderStartup};
 use bevy_render::{
     extract_component::{ExtractComponent, ExtractComponentPlugin},
     render_graph::{RenderGraphExt, ViewNodeRunner},
@@ -63,6 +59,11 @@ use bevy_render::{
     Render, RenderApp, RenderSystems,
 };
 
+use crate::{
+    medium::ScatteringMedium,
+    resources::{init_atmosphere_buffer, write_atmosphere_buffer},
+};
+use bevy_app::app_builder::AppBuilder;
 use bevy_core_pipeline::core_3d::graph::Core3d;
 use bevy_shader::load_shader_library;
 use environment::{
@@ -75,11 +76,6 @@ use resources::{
     AtmosphereTransforms, GpuAtmosphere, RenderSkyBindGroupLayouts,
 };
 use tracing::warn;
-
-use crate::{
-    medium::ScatteringMedium,
-    resources::{init_atmosphere_buffer, write_atmosphere_buffer},
-};
 
 use self::{
     node::{AtmosphereLutsNode, AtmosphereNode, RenderSkyNode},
@@ -106,13 +102,7 @@ impl Plugin for AtmospherePlugin {
         embedded_asset!(app, "render_sky.wgsl");
         embedded_asset!(app, "environment.wgsl");
 
-        app.add_plugins((
-            ExtractComponentPlugin::<Atmosphere>::default(),
-            ExtractComponentPlugin::<GpuAtmosphereSettings>::default(),
-            ExtractComponentPlugin::<AtmosphereEnvironmentMap>::default(),
-            UniformComponentPlugin::<GpuAtmosphere>::default(),
-            UniformComponentPlugin::<GpuAtmosphereSettings>::default(),
-        ))
+        app
         .add_systems(Update, prepare_atmosphere_probe_components);
     }
 
@@ -201,6 +191,22 @@ impl Plugin for AtmospherePlugin {
                     Node3d::MainTransparentPass,
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractComponentPlugin::<Atmosphere>::default(),
+                ExtractComponentPlugin::<GpuAtmosphereSettings>::default(),
+                ExtractComponentPlugin::<AtmosphereEnvironmentMap>::default(),
+                UniformComponentPlugin::<GpuAtmosphere>::default(),
+                UniformComponentPlugin::<GpuAtmosphereSettings>::default(),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

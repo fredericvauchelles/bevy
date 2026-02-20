@@ -11,7 +11,8 @@ use crate::{
     RenderMaterialInstances, RenderMeshInstanceFlags, RenderMeshInstances, RenderPhaseType,
     SetMaterialBindGroup, SetMeshBindGroup, ShadowView,
 };
-use bevy_app::{App, Plugin, PreUpdate};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PreUpdate};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_camera::{Camera, Camera3d};
 use bevy_core_pipeline::{core_3d::CORE_3D_DEPTH_FORMAT, deferred::*, prepass::*};
@@ -38,7 +39,8 @@ use bevy_render::{
         ExtractedView, Msaa, RenderVisibilityRanges, RetainedViewEntity, ViewUniform,
         ViewUniformOffset, ViewUniforms, VISIBILITY_RANGES_STORAGE_BUFFER_COUNT,
     },
-    Extract, ExtractSchedule, Render, RenderApp, RenderDebugFlags, RenderStartup, RenderSystems,
+    Extract, ExtractSchedule, Render, RenderApp, RenderDebugFlags, RenderPlugin, RenderStartup,
+    RenderSystems,
 };
 use bevy_shader::{load_shader_library, Shader, ShaderDefVal};
 use bevy_transform::prelude::GlobalTransform;
@@ -52,6 +54,7 @@ use crate::meshlet::{
 };
 
 use alloc::sync::Arc;
+use bevy_app::app_builder::AppBuilder;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{change_detection::Tick, system::SystemChangeTick};
 use bevy_platform::collections::HashMap;
@@ -95,6 +98,10 @@ impl Plugin for PrepassPipelinePlugin {
             )
             .init_resource::<SpecializedMeshPipelines<PrepassPipelineSpecializer>>();
     }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
+    }
 }
 
 /// Sets up the prepasses for a material.
@@ -129,13 +136,7 @@ impl Plugin for PrepassPlugin {
                         update_mesh_previous_global_transforms,
                         update_previous_view_data,
                     ),
-                )
-                .add_plugins((
-                    BinnedRenderPhasePlugin::<Opaque3dPrepass, MeshPipeline>::new(self.debug_flags),
-                    BinnedRenderPhasePlugin::<AlphaMask3dPrepass, MeshPipeline>::new(
-                        self.debug_flags,
-                    ),
-                ));
+                );
         }
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
@@ -180,6 +181,19 @@ impl Plugin for PrepassPlugin {
                 .before(queue_material_meshlet_meshes)
                 .run_if(resource_exists::<InstanceManager>),
         );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                BinnedRenderPhasePlugin::<Opaque3dPrepass, MeshPipeline>::new(self.debug_flags),
+                BinnedRenderPhasePlugin::<AlphaMask3dPrepass, MeshPipeline>::new(self.debug_flags),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

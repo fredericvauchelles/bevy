@@ -18,16 +18,17 @@
 //! Please report issues, submit fixes and propose changes.
 //! Thanks for stress-testing; let's build something better together.
 
-use bevy_app::{
-    HierarchyPropagatePlugin, Plugin, PluginGroup, PluginGroupBuilder, PostUpdate, PropagateSet,
-};
-use bevy_asset::embedded_asset;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, HierarchyPropagatePlugin, Plugin, PluginDependency, PluginGroup, PluginGroupBuilder, PostUpdate, PropagateSet};
+use bevy_asset::{embedded_asset, AssetPlugin};
 use bevy_ecs::{query::With, schedule::IntoScheduleConfigs};
 use bevy_input_focus::{tab_navigation::TabNavigationPlugin, InputDispatchPlugin};
-use bevy_text::{TextColor, TextFont};
+use bevy_render::RenderPlugin;
+use bevy_text::{TextColor, TextFont, TextPlugin};
 use bevy_ui::UiSystems;
 use bevy_ui_render::UiMaterialPlugin;
 use bevy_ui_widgets::UiWidgetsPlugins;
+use std::borrow::Cow;
 
 use crate::{
     alpha_pattern::{AlphaPatternMaterial, AlphaPatternResource},
@@ -66,14 +67,6 @@ impl Plugin for FeathersPlugin {
         embedded_asset!(app, "assets/shaders/alpha_pattern.wgsl");
         embedded_asset!(app, "assets/shaders/color_plane.wgsl");
 
-        app.add_plugins((
-            ControlsPlugin,
-            CursorIconPlugin,
-            HierarchyPropagatePlugin::<TextColor, With<ThemedText>>::new(PostUpdate),
-            HierarchyPropagatePlugin::<TextFont, With<ThemedText>>::new(PostUpdate),
-            UiMaterialPlugin::<AlphaPatternMaterial>::default(),
-        ));
-
         // This needs to run in UiSystems::Propagate so the fonts are up-to-date for `measure_text_system`
         // and `detect_text_needs_rerender` in UiSystems::Content
         app.configure_sets(
@@ -92,6 +85,22 @@ impl Plugin for FeathersPlugin {
             .add_observer(font_styles::on_changed_font);
 
         app.init_resource::<AlphaPatternResource>();
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ControlsPlugin,
+                CursorIconPlugin,
+                HierarchyPropagatePlugin::<TextColor, With<ThemedText>>::new(PostUpdate),
+                HierarchyPropagatePlugin::<TextFont, With<ThemedText>>::new(PostUpdate),
+                UiMaterialPlugin::<AlphaPatternMaterial>::default(),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin, RenderPlugin, TextPlugin).into()
     }
 }
 

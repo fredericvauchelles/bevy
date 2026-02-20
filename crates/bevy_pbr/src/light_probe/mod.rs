@@ -1,6 +1,7 @@
 //! Light probes for baked global illumination.
 
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::AssetId;
 use bevy_camera::{
     primitives::{Aabb, Frustum},
@@ -19,17 +20,7 @@ use bevy_image::Image;
 use bevy_light::{EnvironmentMapLight, IrradianceVolume, LightProbe};
 use bevy_math::{Affine3A, FloatOrd, Mat4, Vec3A, Vec4};
 use bevy_platform::collections::HashMap;
-use bevy_render::{
-    extract_instances::ExtractInstancesPlugin,
-    render_asset::RenderAssets,
-    render_resource::{DynamicUniformBuffer, Sampler, ShaderType, TextureView},
-    renderer::{RenderAdapter, RenderAdapterInfo, RenderDevice, RenderQueue, WgpuWrapper},
-    settings::WgpuFeatures,
-    sync_world::RenderEntity,
-    texture::{FallbackImage, GpuImage},
-    view::ExtractedView,
-    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
-};
+use bevy_render::{extract_instances::ExtractInstancesPlugin, render_asset::RenderAssets, render_resource::{DynamicUniformBuffer, Sampler, ShaderType, TextureView}, renderer::{RenderAdapter, RenderAdapterInfo, RenderDevice, RenderQueue, WgpuWrapper}, settings::WgpuFeatures, sync_world::RenderEntity, texture::{FallbackImage, GpuImage}, view::ExtractedView, Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems};
 use bevy_shader::load_shader_library;
 use bevy_transform::{components::Transform, prelude::GlobalTransform};
 use tracing::error;
@@ -314,6 +305,10 @@ impl Plugin for LightProbePlugin {
                 (upload_light_probes, prepare_environment_uniform_buffer)
                     .in_set(RenderSystems::PrepareResources),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

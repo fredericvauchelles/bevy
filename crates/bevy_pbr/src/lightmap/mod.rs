@@ -31,7 +31,8 @@
 //! [`StandardMaterial`]: crate::StandardMaterial
 //! [`bevy-baked-gi`]: https://github.com/pcwalton/bevy-baked-gi
 
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{AssetId, Handle};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_derive::{Deref, DerefMut};
@@ -49,14 +50,7 @@ use bevy_image::Image;
 use bevy_math::{uvec2, vec4, Rect, UVec2};
 use bevy_platform::collections::HashSet;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    render_asset::RenderAssets,
-    render_resource::{Sampler, TextureView, WgpuSampler, WgpuTextureView},
-    renderer::RenderAdapter,
-    sync_world::MainEntity,
-    texture::{FallbackImage, GpuImage},
-    Extract, ExtractSchedule, RenderApp, RenderStartup,
-};
+use bevy_render::{render_asset::RenderAssets, render_resource::{Sampler, TextureView, WgpuSampler, WgpuTextureView}, renderer::RenderAdapter, sync_world::MainEntity, texture::{FallbackImage, GpuImage}, Extract, ExtractSchedule, RenderApp, RenderPlugin, RenderStartup};
 use bevy_render::{renderer::RenderDevice, sync_world::MainEntityHashMap};
 use bevy_shader::load_shader_library;
 use bevy_utils::default;
@@ -195,6 +189,10 @@ impl Plugin for LightmapPlugin {
                 ExtractSchedule,
                 extract_lightmaps.after(MeshExtractionSystems),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

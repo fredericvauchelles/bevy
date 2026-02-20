@@ -1,6 +1,7 @@
 //! Simple benchmark to test rendering many point lights.
 //! Run with `WGPU_SETTINGS_PRIO=webgl2` to restrict to uniform buffers and max 256 lights.
 
+use std::borrow::Cow;
 use std::f64::consts::PI;
 
 use bevy::{
@@ -14,6 +15,7 @@ use bevy::{
     window::{PresentMode, WindowResolution},
     winit::WinitSettings,
 };
+use bevy_render::RenderPlugin;
 use rand::{rng, Rng};
 
 fn main() {
@@ -159,6 +161,10 @@ impl Plugin for LogVisibleLights {
             Render,
             print_visible_light_count.in_set(RenderSystems::Prepare),
         );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(?RenderPlugin).into()
     }
 }
 

@@ -1,7 +1,9 @@
+use alloc::borrow::Cow;
 use core::marker::PhantomData;
 
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_ecs::prelude::*;
+use bevy_render::RenderPlugin;
 pub use bevy_render_macros::ExtractResource;
 use bevy_utils::once;
 
@@ -40,6 +42,10 @@ impl<R: ExtractResource> Plugin for ExtractResourcePlugin<R> {
                 core::any::type_name::<R>()
             ));
         }
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

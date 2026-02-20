@@ -30,9 +30,10 @@ use crate::{
     experimental::mip_generation::MipGenerationPlugin, tonemapping::TonemappingPlugin,
     upscaling::UpscalingPlugin,
 };
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, AssetPlugin};
-use bevy_render::RenderApp;
+use bevy_render::{RenderApp, RenderPlugin};
 use oit::OrderIndependentTransparencyPlugin;
 
 #[derive(Default)]
@@ -42,21 +43,26 @@ impl Plugin for CorePipelinePlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "fullscreen_vertex_shader/fullscreen.wgsl");
 
-        app.add_plugins((Core2dPlugin, Core3dPlugin, CopyDeferredLightingIdPlugin))
-            .add_plugins((
-                BlitPlugin,
-                TonemappingPlugin,
-                UpscalingPlugin,
-                OrderIndependentTransparencyPlugin,
-                MipGenerationPlugin,
-            ));
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
         render_app.init_resource::<FullscreenShader>();
     }
 
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((Core2dPlugin, Core3dPlugin, CopyDeferredLightingIdPlugin))
+                .add_plugins((
+                    BlitPlugin,
+                    TonemappingPlugin,
+                    UpscalingPlugin,
+                    OrderIndependentTransparencyPlugin,
+                    MipGenerationPlugin,
+                ));
+        }))
+    }
+
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
+        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }

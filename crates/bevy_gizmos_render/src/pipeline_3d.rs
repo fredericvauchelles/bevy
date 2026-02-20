@@ -3,7 +3,8 @@ use crate::{
     line_joint_gizmo_vertex_buffer_layouts, DrawLineGizmo, DrawLineJointGizmo, GizmoRenderSystems,
     GpuLineGizmo, LineGizmoUniformBindgroupLayout, SetLineGizmoBindGroup,
 };
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{load_embedded_asset, AssetServer, Handle};
 use bevy_camera::visibility::RenderLayers;
 use bevy_core_pipeline::{
@@ -23,16 +24,10 @@ use bevy_ecs::{
 };
 use bevy_image::BevyDefault as _;
 use bevy_pbr::{ExtractedAtmosphere, MeshPipeline, MeshPipelineKey, SetMeshViewBindGroup};
-use bevy_render::{
-    render_asset::{prepare_assets, RenderAssets},
-    render_phase::{
-        AddRenderCommand, DrawFunctions, PhaseItemExtraIndex, SetItemPipeline,
-        ViewSortedRenderPhases,
-    },
-    render_resource::*,
-    view::{ExtractedView, Msaa, ViewTarget},
-    Render, RenderApp, RenderSystems,
-};
+use bevy_render::{render_asset::{prepare_assets, RenderAssets}, render_phase::{
+    AddRenderCommand, DrawFunctions, PhaseItemExtraIndex, SetItemPipeline,
+    ViewSortedRenderPhases,
+}, render_resource::*, view::{ExtractedView, Msaa, ViewTarget}, Render, RenderApp, RenderPlugin, RenderSystems};
 use bevy_render::{sync_world::MainEntity, RenderStartup};
 use bevy_shader::Shader;
 use bevy_utils::default;
@@ -64,6 +59,10 @@ impl Plugin for LineGizmo3dPlugin {
                     .in_set(GizmoRenderSystems::QueueLineGizmos3d)
                     .after(prepare_assets::<GpuLineGizmo>),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(?RenderPlugin).into()
     }
 }
 

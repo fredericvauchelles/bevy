@@ -3,6 +3,7 @@ use crate::{
     render_resource::{Buffer, BufferUsages},
     renderer::RenderDevice,
 };
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{App, Plugin};
 use bevy_asset::{Asset, AssetApp, AssetId, RenderAssetUsages};
 use bevy_ecs::system::{lifetimeless::SRes, SystemParamItem};
@@ -17,9 +18,14 @@ pub struct StoragePlugin;
 
 impl Plugin for StoragePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RenderAssetPlugin::<GpuShaderStorageBuffer>::default())
-            .init_asset::<ShaderStorageBuffer>()
+        app.init_asset::<ShaderStorageBuffer>()
             .register_asset_reflect::<ShaderStorageBuffer>();
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(RenderAssetPlugin::<GpuShaderStorageBuffer>::default());
+        }))
     }
 }
 

@@ -1,6 +1,7 @@
 pub mod visibility;
 pub mod window;
 
+use alloc::borrow::Cow;
 use bevy_camera::{
     primitives::Frustum, CameraMainTextureUsages, ClearColor, ClearColorConfig, Exposure,
     MainPassResolutionOverride, NormalizedRenderTarget,
@@ -25,7 +26,8 @@ use crate::{
     Render, RenderApp, RenderSystems,
 };
 use alloc::sync::Arc;
-use bevy_app::{App, Plugin};
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_color::LinearRgba;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
@@ -33,6 +35,7 @@ use bevy_image::{BevyDefault as _, ToExtents};
 use bevy_math::{mat3, vec2, vec3, Mat3, Mat4, UVec4, Vec2, Vec3, Vec4, Vec4Swizzles};
 use bevy_platform::collections::{hash_map::Entry, HashMap};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
+use bevy_render::RenderPlugin;
 use bevy_render_macros::ExtractComponent;
 use bevy_shader::load_shader_library;
 use bevy_transform::components::GlobalTransform;
@@ -100,15 +103,6 @@ impl Plugin for ViewPlugin {
     fn build(&self, app: &mut App) {
         load_shader_library!(app, "view.wgsl");
 
-        app
-            // NOTE: windows.is_changed() handles cases where a window was resized
-            .add_plugins((
-                ExtractComponentPlugin::<Hdr>::default(),
-                ExtractComponentPlugin::<Msaa>::default(),
-                ExtractComponentPlugin::<OcclusionCulling>::default(),
-                RenderVisibilityRangePlugin,
-            ));
-
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.add_systems(
                 Render,
@@ -141,6 +135,23 @@ impl Plugin for ViewPlugin {
                 .init_resource::<ViewUniforms>()
                 .init_resource::<ViewTargetAttachments>();
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app
+                // NOTE: windows.is_changed() handles cases where a window was resized
+                .add_plugins((
+                    ExtractComponentPlugin::<Hdr>::default(),
+                    ExtractComponentPlugin::<Msaa>::default(),
+                    ExtractComponentPlugin::<OcclusionCulling>::default(),
+                    RenderVisibilityRangePlugin,
+                ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

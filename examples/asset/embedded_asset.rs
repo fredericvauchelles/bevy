@@ -6,10 +6,12 @@
 
 //! One common use case for embedded assets is including them directly within the executable during its creation. By embedding an asset at build time rather than runtime
 //! the program never needs to go to disk for the asset at all, since it is already located in the program's binary executable.
+
 use bevy::{
     asset::{embedded_asset, io::AssetSourceId, AssetPath},
     prelude::*,
 };
+use std::borrow::Cow;
 use std::path::Path;
 
 fn main() {
@@ -29,6 +31,10 @@ impl Plugin for EmbeddedAssetPlugin {
         // Path to asset must be relative to this file, because that's how
         // include_bytes! works.
         embedded_asset!(app, omit_prefix, "files/bevy_pixel_light.png");
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin).into()
     }
 }
 

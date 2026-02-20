@@ -29,6 +29,10 @@ use core::time::Duration;
 pub struct CiTestingPlugin;
 
 impl Plugin for CiTestingPlugin {
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {}))
+    }
+
     fn build(&self, app: &mut App) {
         let config = if !app.world().is_resource_added::<CiTestingConfig>() {
             // Load configuration from file if not already setup
@@ -55,11 +59,6 @@ impl Plugin for CiTestingPlugin {
             app.world().resource::<CiTestingConfig>().clone()
         };
 
-        // Add the `EasyCameraMovementPlugin` to the app if it's not already added.
-        // To configure the movement speed, add the plugin first.
-        if !app.is_plugin_added::<EasyCameraMovementPlugin>() {
-            app.add_plugins(EasyCameraMovementPlugin::default());
-        }
         // Add the `EasyScreenRecordPlugin` to the app if it's not already added and one of the event is starting screenrecording.
         // To configure the recording quality, add the plugin first.
         #[cfg(feature = "screenrecording")]

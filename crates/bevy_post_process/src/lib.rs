@@ -17,6 +17,7 @@ use crate::{
     bloom::BloomPlugin, dof::DepthOfFieldPlugin, effect_stack::EffectStackPlugin,
     motion_blur::MotionBlurPlugin, msaa_writeback::MsaaWritebackPlugin,
 };
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{App, Plugin, PluginDependency};
 use smallvec::alloc;
 
@@ -25,14 +26,18 @@ use smallvec::alloc;
 pub struct PostProcessPlugin;
 
 impl Plugin for PostProcessPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins((
-            MsaaWritebackPlugin,
-            BloomPlugin,
-            MotionBlurPlugin,
-            DepthOfFieldPlugin,
-            EffectStackPlugin,
-        ));
+    fn build(&self, _: &mut App) {}
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                MsaaWritebackPlugin,
+                BloomPlugin,
+                MotionBlurPlugin,
+                DepthOfFieldPlugin,
+                EffectStackPlugin,
+            ));
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

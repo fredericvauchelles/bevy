@@ -87,6 +87,7 @@ use crate::{
 };
 use alloc::sync::Arc;
 use batching::gpu_preprocessing::BatchingPlugin;
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, AppLabel, Plugin, PluginDependency, SubApp};
 use bevy_asset::{AssetApp, AssetPlugin, AssetServer};
 use bevy_ecs::{
@@ -356,26 +357,6 @@ impl Plugin for RenderPlugin {
             }
         };
 
-        app.add_plugins((
-            WindowRenderPlugin,
-            CameraPlugin,
-            ViewPlugin,
-            MeshRenderAssetPlugin,
-            GlobalsPlugin,
-            #[cfg(feature = "morph")]
-            mesh::MorphPlugin,
-            TexturePlugin,
-            BatchingPlugin {
-                debug_flags: self.debug_flags,
-            },
-            SyncWorldPlugin,
-            StoragePlugin,
-            GpuReadbackPlugin::default(),
-            OcclusionCullingPlugin,
-            #[cfg(feature = "tracing-tracy")]
-            diagnostic::RenderDiagnosticsPlugin,
-        ));
-
         app.init_resource::<RenderAssetBytesPerFrame>();
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.init_resource::<RenderAssetBytesPerFrameLimiter>();
@@ -437,6 +418,30 @@ impl Plugin for RenderPlugin {
                 .insert_resource(render_adapter)
                 .insert_resource(adapter_info);
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                WindowRenderPlugin,
+                CameraPlugin,
+                ViewPlugin,
+                MeshRenderAssetPlugin,
+                GlobalsPlugin,
+                #[cfg(feature = "morph")]
+                mesh::MorphPlugin,
+                TexturePlugin,
+                BatchingPlugin {
+                    debug_flags: self.debug_flags,
+                },
+                SyncWorldPlugin,
+                StoragePlugin,
+                GpuReadbackPlugin::default(),
+                OcclusionCullingPlugin,
+                #[cfg(feature = "tracing-tracy")]
+                diagnostic::RenderDiagnosticsPlugin,
+            ));
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

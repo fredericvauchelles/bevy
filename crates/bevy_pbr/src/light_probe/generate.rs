@@ -11,7 +11,9 @@
 //! This module provides realtime filtering via [`bevy_light::GeneratedEnvironmentMapLight`].
 //! For prefiltered environment maps, see [`bevy_light::EnvironmentMapLight`].
 //! These components are intended to be added to a camera.
-use bevy_app::{App, Plugin, Update};
+
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, Update};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Assets, RenderAssetUsages};
 use bevy_core_pipeline::core_3d::graph::{Core3d, Node3d};
 use bevy_ecs::{
@@ -25,26 +27,15 @@ use bevy_ecs::{
 };
 use bevy_image::Image;
 use bevy_math::{Quat, UVec2, Vec2};
-use bevy_render::{
-    diagnostic::RecordDiagnostics,
-    render_asset::RenderAssets,
-    render_graph::{Node, NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel},
-    render_resource::{
-        binding_types::*, AddressMode, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
-        BindGroupLayoutEntries, CachedComputePipelineId, ComputePassDescriptor,
-        ComputePipelineDescriptor, DownlevelFlags, Extent3d, FilterMode, PipelineCache, Sampler,
-        SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType, StorageTextureAccess,
-        Texture, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
-        TextureFormatFeatureFlags, TextureSampleType, TextureUsages, TextureView,
-        TextureViewDescriptor, TextureViewDimension, UniformBuffer,
-    },
-    renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue},
-    settings::WgpuFeatures,
-    sync_component::SyncComponentPlugin,
-    sync_world::RenderEntity,
-    texture::{CachedTexture, GpuImage, TextureCache},
-    Extract, ExtractSchedule, Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{diagnostic::RecordDiagnostics, render_asset::RenderAssets, render_graph::{Node, NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel}, render_resource::{
+    binding_types::*, AddressMode, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntries, CachedComputePipelineId, ComputePassDescriptor,
+    ComputePipelineDescriptor, DownlevelFlags, Extent3d, FilterMode, PipelineCache, Sampler,
+    SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType, StorageTextureAccess,
+    Texture, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureFormatFeatureFlags, TextureSampleType, TextureUsages, TextureView,
+    TextureViewDescriptor, TextureViewDimension, UniformBuffer,
+}, renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue}, settings::WgpuFeatures, sync_component::SyncComponentPlugin, sync_world::RenderEntity, texture::{CachedTexture, GpuImage, TextureCache}, Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 
 // Implementation: generate diffuse and specular cubemaps required by PBR
 // from a given high-res cubemap by
@@ -60,12 +51,12 @@ use bevy_render::{
 // [Lambertian convolution]: https://bruop.github.io/ibl/#:~:text=Lambertian%20Diffuse%20Component
 // [GGX convolution]: https://gpuopen.com/download/Bounded_VNDF_Sampling_for_Smith-GGX_Reflections.pdf
 
+use crate::Bluenoise;
+use bevy_app::app_builder::AppBuilder;
 use bevy_light::{EnvironmentMapLight, GeneratedEnvironmentMapLight};
 use bevy_shader::ShaderDefVal;
 use core::cmp::min;
 use tracing::info;
-
-use crate::Bluenoise;
 
 /// Labels for the environment map generation nodes
 #[derive(PartialEq, Eq, Debug, Copy, Clone, Hash, RenderLabel)]
@@ -138,7 +129,7 @@ impl Plugin for EnvironmentMapGenerationPlugin {
         embedded_asset!(app, "downsample.wgsl");
         embedded_asset!(app, "copy.wgsl");
 
-        app.add_plugins(SyncComponentPlugin::<GeneratedEnvironmentMapLight>::default())
+        app
             .add_systems(Update, generate_environment_map_light);
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
@@ -175,6 +166,16 @@ impl Plugin for EnvironmentMapGenerationPlugin {
                 RenderStartup,
                 initialize_generated_environment_map_resources,
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(SyncComponentPlugin::<GeneratedEnvironmentMapLight>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

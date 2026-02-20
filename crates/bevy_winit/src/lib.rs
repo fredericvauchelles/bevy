@@ -21,6 +21,7 @@ use core::cell::RefCell;
 use winit::{event_loop::EventLoop, window::WindowId};
 
 use bevy_a11y::AccessibilityRequested;
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Last, Plugin, PluginDependency};
 use bevy_ecs::prelude::*;
 use bevy_window::{exit_on_all_closed, CursorOptions, Window, WindowCreated};
@@ -146,9 +147,6 @@ impl Plugin for WinitPlugin {
                     .chain(),
             );
 
-        app.add_plugins(AccessKitPlugin);
-        app.add_plugins(cursor::WinitCursorPlugin);
-
         app.add_observer(
             |_window: On<Add, Window>, event_loop_proxy: Res<EventLoopProxyWrapper>| -> Result {
                 event_loop_proxy.send_event(WinitUserEvent::WindowAdded)?;
@@ -156,6 +154,13 @@ impl Plugin for WinitPlugin {
                 Ok(())
             },
         );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(AccessKitPlugin);
+            app.add_plugins(cursor::WinitCursorPlugin);
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

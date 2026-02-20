@@ -3,9 +3,11 @@ use crate::{
     RenderMesh2dInstances, SetMesh2dBindGroup, SetMesh2dViewBindGroup, ViewKeyCache,
     ViewSpecializationTicks,
 };
-use bevy_app::{App, Plugin, PostUpdate};
+use alloc::borrow::Cow;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PostUpdate};
 use bevy_asset::prelude::AssetChanged;
-use bevy_asset::{AsAssetId, Asset, AssetApp, AssetEventSystems, AssetId, AssetServer, Handle};
+use bevy_asset::{AsAssetId, Asset, AssetApp, AssetEventSystems, AssetId, AssetPlugin, AssetServer, Handle};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_core_pipeline::{
     core_2d::{
@@ -25,27 +27,17 @@ use bevy_mesh::MeshVertexBufferLayoutRef;
 use bevy_platform::collections::HashMap;
 use bevy_reflect::{prelude::ReflectDefault, Reflect};
 use bevy_render::render_resource::BindGroupLayoutDescriptor;
-use bevy_render::{
-    camera::extract_cameras,
-    mesh::RenderMesh,
-    render_asset::{
-        prepare_assets, PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets,
-    },
-    render_phase::{
-        AddRenderCommand, BinnedRenderPhaseType, DrawFunctionId, DrawFunctions, InputUniformIndex,
-        PhaseItem, PhaseItemExtraIndex, RenderCommand, RenderCommandResult, SetItemPipeline,
-        TrackedRenderPass, ViewBinnedRenderPhases, ViewSortedRenderPhases,
-    },
-    render_resource::{
-        AsBindGroup, AsBindGroupError, BindGroup, BindGroupId, BindingResources,
-        CachedRenderPipelineId, PipelineCache, RenderPipelineDescriptor, SpecializedMeshPipeline,
-        SpecializedMeshPipelineError, SpecializedMeshPipelines,
-    },
-    renderer::RenderDevice,
-    sync_world::{MainEntity, MainEntityHashMap},
-    view::{ExtractedView, RenderVisibleEntities},
-    Extract, ExtractSchedule, Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{camera::extract_cameras, mesh::RenderMesh, render_asset::{
+    prepare_assets, PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets,
+}, render_phase::{
+    AddRenderCommand, BinnedRenderPhaseType, DrawFunctionId, DrawFunctions, InputUniformIndex,
+    PhaseItem, PhaseItemExtraIndex, RenderCommand, RenderCommandResult, SetItemPipeline,
+    TrackedRenderPass, ViewBinnedRenderPhases, ViewSortedRenderPhases,
+}, render_resource::{
+    AsBindGroup, AsBindGroupError, BindGroup, BindGroupId, BindingResources,
+    CachedRenderPipelineId, PipelineCache, RenderPipelineDescriptor, SpecializedMeshPipeline,
+    SpecializedMeshPipelineError, SpecializedMeshPipelines,
+}, renderer::RenderDevice, sync_world::{MainEntity, MainEntityHashMap}, view::{ExtractedView, RenderVisibleEntities}, Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use bevy_shader::{Shader, ShaderDefVal, ShaderRef};
 use bevy_utils::Parallel;
 use core::{hash::Hash, marker::PhantomData};
@@ -276,7 +268,6 @@ where
         app.init_asset::<M>()
             .init_resource::<EntitiesNeedingSpecialization<M>>()
             .register_type::<MeshMaterial2d<M>>()
-            .add_plugins(RenderAssetPlugin::<PreparedMaterial2d<M>>::default())
             .add_systems(
                 PostUpdate,
                 check_entities_needing_specialization::<M>.after(AssetEventSystems),
@@ -315,6 +306,16 @@ where
                     ),
                 );
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(RenderAssetPlugin::<PreparedMaterial2d<M>>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin, ?RenderPlugin).into()
     }
 }
 

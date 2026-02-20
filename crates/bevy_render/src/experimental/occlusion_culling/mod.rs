@@ -3,12 +3,13 @@
 //! See [`OcclusionCulling`] for a detailed description of occlusion culling in
 //! Bevy.
 
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_ecs::{component::Component, entity::Entity, prelude::ReflectComponent};
 use bevy_reflect::{prelude::ReflectDefault, Reflect};
 use bevy_shader::load_shader_library;
 
-use crate::{extract_component::ExtractComponent, render_resource::TextureView};
+use crate::{extract_component::ExtractComponent, render_resource::TextureView, RenderPlugin};
 
 /// Enables GPU occlusion culling.
 ///
@@ -19,6 +20,10 @@ pub struct OcclusionCullingPlugin;
 impl Plugin for OcclusionCullingPlugin {
     fn build(&self, app: &mut App) {
         load_shader_library!(app, "mesh_preprocess_types.wgsl");
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -1,8 +1,9 @@
 //! Batching functionality when GPU preprocessing is in use.
 
+use alloc::borrow::Cow;
 use core::{any::TypeId, marker::PhantomData, mem};
 
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
     prelude::Entity,
@@ -24,21 +25,13 @@ use nonmax::NonMaxU32;
 use tracing::{error, info};
 use wgpu::{BindingResource, BufferUsages, DownlevelFlags, Features};
 
-use crate::{
-    experimental::occlusion_culling::OcclusionCulling,
-    render_phase::{
-        BinnedPhaseItem, BinnedRenderPhaseBatch, BinnedRenderPhaseBatchSet,
-        BinnedRenderPhaseBatchSets, CachedRenderPipelinePhaseItem, PhaseItem,
-        PhaseItemBatchSetKey as _, PhaseItemExtraIndex, RenderBin, SortedPhaseItem,
-        SortedRenderPhase, UnbatchableBinnedEntityIndices, ViewBinnedRenderPhases,
-        ViewSortedRenderPhases,
-    },
-    render_resource::{Buffer, GpuArrayBufferable, RawBufferVec, UninitBufferVec},
-    renderer::{RenderAdapter, RenderAdapterInfo, RenderDevice, RenderQueue, WgpuWrapper},
-    sync_world::MainEntity,
-    view::{ExtractedView, NoIndirectDrawing, RetainedViewEntity},
-    Render, RenderApp, RenderDebugFlags, RenderSystems,
-};
+use crate::{experimental::occlusion_culling::OcclusionCulling, render_phase::{
+    BinnedPhaseItem, BinnedRenderPhaseBatch, BinnedRenderPhaseBatchSet,
+    BinnedRenderPhaseBatchSets, CachedRenderPipelinePhaseItem, PhaseItem,
+    PhaseItemBatchSetKey as _, PhaseItemExtraIndex, RenderBin, SortedPhaseItem,
+    SortedRenderPhase, UnbatchableBinnedEntityIndices, ViewBinnedRenderPhases,
+    ViewSortedRenderPhases,
+}, render_resource::{Buffer, GpuArrayBufferable, RawBufferVec, UninitBufferVec}, renderer::{RenderAdapter, RenderAdapterInfo, RenderDevice, RenderQueue, WgpuWrapper}, sync_world::MainEntity, view::{ExtractedView, NoIndirectDrawing, RetainedViewEntity}, Render, RenderApp, RenderDebugFlags, RenderPlugin, RenderSystems};
 
 use super::{BatchMeta, GetBatchData, GetFullBatchData};
 
@@ -75,6 +68,10 @@ impl Plugin for BatchingPlugin {
         };
 
         render_app.init_resource::<GpuPreprocessingSupport>();
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -71,9 +71,6 @@ pub enum SpriteSystems {
 
 impl Plugin for SpritePlugin {
     fn build(&self, app: &mut App) {
-        if !app.is_plugin_added::<TextureAtlasPlugin>() {
-            app.add_plugins(TextureAtlasPlugin);
-        }
         app.add_systems(
             PostUpdate,
             calculate_bounds_2d.in_set(VisibilitySystems::CalculateBounds),
@@ -93,9 +90,17 @@ impl Plugin for SpritePlugin {
                 .in_set(bevy_text::Text2dUpdateSystems)
                 .after(bevy_app::AnimationSystems),
         );
+    }
 
-        #[cfg(feature = "bevy_picking")]
-        app.add_plugins(SpritePickingPlugin);
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            if !app.contains_plugin::<TextureAtlasPlugin>() {
+                app.add_plugins(TextureAtlasPlugin);
+            }
+
+            #[cfg(feature = "bevy_picking")]
+            app.add_plugins(SpritePickingPlugin);
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

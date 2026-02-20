@@ -117,10 +117,6 @@ struct DrawStencil;
 struct MeshStencilPhasePlugin;
 impl Plugin for MeshStencilPhasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            ExtractComponentPlugin::<DrawStencil>::default(),
-            SortedRenderPhasePlugin::<Stencil3d, MeshPipeline>::new(RenderDebugFlags::default()),
-        ));
         // We need to get the render app from the main app
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -146,6 +142,14 @@ impl Plugin for MeshStencilPhasePlugin {
             .add_render_graph_node::<ViewNodeRunner<CustomDrawNode>>(Core3d, CustomDrawPassLabel)
             // Tell the node to run after the main pass
             .add_render_graph_edges(Core3d, (Node3d::MainOpaquePass, CustomDrawPassLabel));
+    }
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractComponentPlugin::<DrawStencil>::default(),
+                SortedRenderPhasePlugin::<Stencil3d, MeshPipeline>::new(RenderDebugFlags::default()),
+            ));
+        }))
     }
 }
 

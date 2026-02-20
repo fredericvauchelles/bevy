@@ -75,6 +75,7 @@ use bevy_reflect::TypePath;
 
 use crate::{config::ErasedGizmoConfigGroup, gizmos::GizmoBuffer};
 
+use bevy_app::app_builder::AppBuilder;
 use bevy_time::Fixed;
 use bevy_utils::TypeIdMap;
 use config::{DefaultGizmoConfigGroup, GizmoConfig, GizmoConfigGroup, GizmoConfigStore};
@@ -93,11 +94,15 @@ impl Plugin for GizmoPlugin {
             .init_resource::<GizmoHandles>()
             // We insert the Resource GizmoConfigStore into the world implicitly here if it does not exist.
             .init_gizmo_group::<DefaultGizmoConfigGroup>();
+    }
 
-        app.add_plugins((aabb::AabbGizmoPlugin, global::GlobalGizmosPlugin));
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((aabb::AabbGizmoPlugin, global::GlobalGizmosPlugin));
 
-        #[cfg(feature = "bevy_light")]
-        app.add_plugins(LightGizmoPlugin);
+            #[cfg(feature = "bevy_light")]
+            app.add_plugins(LightGizmoPlugin);
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

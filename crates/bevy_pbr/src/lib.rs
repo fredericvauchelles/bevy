@@ -217,39 +217,6 @@ impl Plugin for PbrPlugin {
 
         app.register_asset_reflect::<StandardMaterial>()
             .init_resource::<DefaultOpaqueRendererMethod>()
-            .add_plugins((
-                MeshRenderPlugin {
-                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
-                    debug_flags: self.debug_flags,
-                },
-                MaterialsPlugin {
-                    debug_flags: self.debug_flags,
-                },
-                MaterialPlugin::<StandardMaterial> {
-                    debug_flags: self.debug_flags,
-                    ..Default::default()
-                },
-                ScreenSpaceAmbientOcclusionPlugin,
-                FogPlugin,
-                ExtractResourcePlugin::<DefaultOpaqueRendererMethod>::default(),
-                SyncComponentPlugin::<ShadowFilteringMethod>::default(),
-                LightmapPlugin,
-                LightProbePlugin,
-                GpuMeshPreprocessPlugin {
-                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
-                },
-                VolumetricFogPlugin,
-                ScreenSpaceReflectionsPlugin,
-                ClusteredDecalPlugin,
-            ))
-            .add_plugins((
-                decal::ForwardDecalPlugin,
-                SyncComponentPlugin::<DirectionalLight>::default(),
-                SyncComponentPlugin::<PointLight>::default(),
-                SyncComponentPlugin::<SpotLight>::default(),
-                SyncComponentPlugin::<AmbientLight>::default(),
-            ))
-            .add_plugins((ScatteringMediumPlugin, AtmospherePlugin))
             .configure_sets(
                 PostUpdate,
                 (
@@ -258,10 +225,6 @@ impl Plugin for PbrPlugin {
                 )
                     .chain(),
             );
-
-        if self.add_default_deferred_lighting_plugin {
-            app.add_plugins(DeferredPbrLightingPlugin);
-        }
 
         // Initialize the default material handle.
         app.world_mut()
@@ -368,6 +331,48 @@ impl Plugin for PbrPlugin {
 
         let global_cluster_settings = make_global_cluster_settings(render_app.world());
         app.insert_resource(global_cluster_settings);
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                MeshRenderPlugin {
+                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
+                    debug_flags: self.debug_flags,
+                },
+                MaterialsPlugin {
+                    debug_flags: self.debug_flags,
+                },
+                MaterialPlugin::<StandardMaterial> {
+                    debug_flags: self.debug_flags,
+                    ..Default::default()
+                },
+                ScreenSpaceAmbientOcclusionPlugin,
+                FogPlugin,
+                ExtractResourcePlugin::<DefaultOpaqueRendererMethod>::default(),
+                SyncComponentPlugin::<ShadowFilteringMethod>::default(),
+                LightmapPlugin,
+                LightProbePlugin,
+                GpuMeshPreprocessPlugin {
+                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
+                },
+                VolumetricFogPlugin,
+                ScreenSpaceReflectionsPlugin,
+                ClusteredDecalPlugin,
+            ))
+                .add_plugins((
+                    decal::ForwardDecalPlugin,
+                    SyncComponentPlugin::<DirectionalLight>::default(),
+                    SyncComponentPlugin::<PointLight>::default(),
+                    SyncComponentPlugin::<SpotLight>::default(),
+                    SyncComponentPlugin::<AmbientLight>::default(),
+                ))
+                .add_plugins((ScatteringMediumPlugin, AtmospherePlugin));
+
+            if self.add_default_deferred_lighting_plugin {
+                app.add_plugins(DeferredPbrLightingPlugin);
+            }
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

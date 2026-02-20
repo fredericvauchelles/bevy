@@ -31,6 +31,7 @@ pub(crate) use self::{
         prepare_material_meshlet_meshes_main_opaque_pass, prepare_material_meshlet_meshes_prepass,
     },
 };
+use alloc::borrow::Cow;
 
 pub use self::asset::{
     MeshletMesh, MeshletMeshLoader, MeshletMeshSaver, MESHLET_MESH_ASSET_VERSION,
@@ -60,7 +61,7 @@ use crate::{
     graph::NodePbr, meshlet::meshlet_mesh_manager::init_meshlet_mesh_manager,
     PreviousGlobalTransform,
 };
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, AssetApp, AssetId, Handle};
 use bevy_camera::visibility::{self, Visibility, VisibilityClass};
 use bevy_core_pipeline::{
@@ -77,13 +78,7 @@ use bevy_ecs::{
     system::{Commands, Query, Res},
 };
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    render_graph::{RenderGraphExt, ViewNodeRunner},
-    renderer::RenderDevice,
-    settings::WgpuFeatures,
-    view::{prepare_view_targets, Msaa},
-    ExtractSchedule, Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{render_graph::{RenderGraphExt, ViewNodeRunner}, renderer::RenderDevice, settings::WgpuFeatures, view::{prepare_view_targets, Msaa}, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use bevy_shader::load_shader_library;
 use bevy_transform::components::Transform;
 use derive_more::From;
@@ -242,6 +237,10 @@ impl Plugin for MeshletPlugin {
                         .before(queue_material_meshlet_meshes),
                 ),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

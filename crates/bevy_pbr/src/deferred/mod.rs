@@ -8,8 +8,9 @@ use crate::{
     DistanceFog, ExtractedAtmosphere, MeshPipelineKey, ViewFogUniformOffset,
     ViewLightsUniformOffset,
 };
+use alloc::borrow::Cow;
 use bevy_app::prelude::*;
-use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
+use bevy_asset::{embedded_asset, load_embedded_asset, AssetPlugin, AssetServer, Handle};
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
     deferred::{
@@ -21,7 +22,6 @@ use bevy_core_pipeline::{
 use bevy_ecs::{prelude::*, query::QueryItem};
 use bevy_image::BevyDefault as _;
 use bevy_light::{EnvironmentMapLight, IrradianceVolume, ShadowFilteringMethod};
-use bevy_render::RenderStartup;
 use bevy_render::{
     diagnostic::RecordDiagnostics,
     extract_component::{
@@ -33,6 +33,7 @@ use bevy_render::{
     view::{ExtractedView, ViewTarget, ViewUniformOffset},
     Render, RenderApp, RenderSystems,
 };
+use bevy_render::{RenderPlugin, RenderStartup};
 use bevy_shader::{Shader, ShaderDefVal};
 use bevy_utils::default;
 
@@ -95,11 +96,7 @@ impl Default for PbrDeferredLightingDepthId {
 
 impl Plugin for DeferredPbrLightingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            ExtractComponentPlugin::<PbrDeferredLightingDepthId>::default(),
-            UniformComponentPlugin::<PbrDeferredLightingDepthId>::default(),
-        ))
-        .add_systems(PostUpdate, insert_deferred_lighting_pass_id_component);
+        app.add_systems(PostUpdate, insert_deferred_lighting_pass_id_component);
 
         embedded_asset!(app, "deferred_lighting.wgsl");
 
@@ -126,6 +123,19 @@ impl Plugin for DeferredPbrLightingPlugin {
                     Node3d::MainOpaquePass,
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractComponentPlugin::<PbrDeferredLightingDepthId>::default(),
+                UniformComponentPlugin::<PbrDeferredLightingDepthId>::default(),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }
 

@@ -18,9 +18,12 @@
 //! decal arbitrarily. See the documentation in `clustered.wgsl` for more
 //! information and the `clustered_decals` example for an example of use.
 
+use alloc::borrow::Cow;
 use core::{num::NonZero, ops::Deref};
 
-use bevy_app::{App, Plugin};
+use crate::{binding_arrays_are_usable, prepare_lights, GlobalClusterableObjectMeta};
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{AssetId, Handle};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_derive::{Deref, DerefMut};
@@ -46,13 +49,11 @@ use bevy_render::{
     sync_component::SyncComponentPlugin,
     sync_world::RenderEntity,
     texture::{FallbackImage, GpuImage},
-    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
+    Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems,
 };
 use bevy_shader::load_shader_library;
 use bevy_transform::components::GlobalTransform;
 use bytemuck::{Pod, Zeroable};
-
-use crate::{binding_arrays_are_usable, prepare_lights, GlobalClusterableObjectMeta};
 
 /// The number of textures that can be associated with each clustered decal.
 const IMAGES_PER_DECAL: usize = 4;
@@ -147,8 +148,6 @@ impl Plugin for ClusteredDecalPlugin {
     fn build(&self, app: &mut App) {
         load_shader_library!(app, "clustered.wgsl");
 
-        app.add_plugins(SyncComponentPlugin::<ClusteredDecal>::default());
-
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -167,6 +166,16 @@ impl Plugin for ClusteredDecalPlugin {
                 Render,
                 upload_decals.in_set(RenderSystems::PrepareResources),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(SyncComponentPlugin::<ClusteredDecal>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

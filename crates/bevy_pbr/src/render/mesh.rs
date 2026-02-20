@@ -2,6 +2,7 @@ use crate::{
     material_bind_groups::{MaterialBindGroupIndex, MaterialBindGroupSlot},
     resources::write_atmosphere_buffer,
 };
+use alloc::borrow::Cow;
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetId};
 use bevy_camera::{
     primitives::Aabb,
@@ -34,31 +35,20 @@ use bevy_mesh::{
     VertexAttributeDescriptor,
 };
 use bevy_platform::collections::{hash_map::Entry, HashMap};
-use bevy_render::{
-    batching::{
-        gpu_preprocessing::{
-            self, GpuPreprocessingSupport, IndirectBatchSet, IndirectParametersBuffers,
-            IndirectParametersCpuMetadata, IndirectParametersIndexed, IndirectParametersNonIndexed,
-            InstanceInputUniformBuffer, UntypedPhaseIndirectParametersBuffers,
-        },
-        no_gpu_preprocessing, GetBatchData, GetFullBatchData, NoAutomaticBatching,
+use bevy_render::{batching::{
+    gpu_preprocessing::{
+        self, GpuPreprocessingSupport, IndirectBatchSet, IndirectParametersBuffers,
+        IndirectParametersCpuMetadata, IndirectParametersIndexed, IndirectParametersNonIndexed,
+        InstanceInputUniformBuffer, UntypedPhaseIndirectParametersBuffers,
     },
-    mesh::{allocator::MeshAllocator, RenderMesh, RenderMeshBufferInfo},
-    render_asset::RenderAssets,
-    render_phase::{
-        BinnedRenderPhasePlugin, InputUniformIndex, PhaseItem, PhaseItemExtraIndex, RenderCommand,
-        RenderCommandResult, SortedRenderPhasePlugin, TrackedRenderPass,
-    },
-    render_resource::*,
-    renderer::{RenderAdapter, RenderDevice, RenderQueue},
-    sync_world::MainEntityHashSet,
-    texture::{DefaultImageSampler, GpuImage},
-    view::{
-        self, NoIndirectDrawing, RenderVisibilityRanges, RetainedViewEntity, ViewTarget,
-        ViewUniformOffset,
-    },
-    Extract,
-};
+    no_gpu_preprocessing, GetBatchData, GetFullBatchData, NoAutomaticBatching,
+}, mesh::{allocator::MeshAllocator, RenderMesh, RenderMeshBufferInfo}, render_asset::RenderAssets, render_phase::{
+    BinnedRenderPhasePlugin, InputUniformIndex, PhaseItem, PhaseItemExtraIndex, RenderCommand,
+    RenderCommandResult, SortedRenderPhasePlugin, TrackedRenderPass,
+}, render_resource::*, renderer::{RenderAdapter, RenderDevice, RenderQueue}, sync_world::MainEntityHashSet, texture::{DefaultImageSampler, GpuImage}, view::{
+    self, NoIndirectDrawing, RenderVisibilityRanges, RetainedViewEntity, ViewTarget,
+    ViewUniformOffset,
+}, Extract, RenderPlugin};
 use bevy_shader::{load_shader_library, Shader, ShaderDefVal, ShaderSettings};
 use bevy_transform::components::GlobalTransform;
 use bevy_utils::{default, Parallel, TypeIdMap};
@@ -297,6 +287,10 @@ impl Plugin for MeshRenderPlugin {
             ShaderSettings {
                 shader_defs: mesh_bindings_shader_defs.clone(),
             });
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

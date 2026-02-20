@@ -1,6 +1,6 @@
 use super::OitBuffers;
 use crate::{oit::OrderIndependentTransparencySettings, FullscreenShader};
-use bevy_app::Plugin;
+use bevy_app::{plugin_deps, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer};
 use bevy_derive::Deref;
 use bevy_ecs::{
@@ -18,10 +18,11 @@ use bevy_render::{
     },
     renderer::{RenderAdapter, RenderDevice},
     view::{ExtractedView, ViewTarget, ViewUniform, ViewUniforms},
-    Render, RenderApp, RenderSystems,
+    Render, RenderApp, RenderPlugin, RenderSystems,
 };
 use bevy_shader::ShaderDefVal;
 use bevy_utils::default;
+use std::borrow::Cow;
 use tracing::warn;
 
 /// Contains the render node used to run the resolve pass.
@@ -59,6 +60,10 @@ impl Plugin for OitResolvePlugin {
                 ),
             )
             .insert_resource(OitResolvePipeline::new());
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

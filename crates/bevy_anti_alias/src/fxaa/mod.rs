@@ -1,3 +1,4 @@
+use alloc::borrow::Cow;
 use bevy_app::prelude::*;
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_camera::Camera;
@@ -9,17 +10,10 @@ use bevy_core_pipeline::{
 use bevy_ecs::prelude::*;
 use bevy_image::BevyDefault as _;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    extract_component::{ExtractComponent, ExtractComponentPlugin},
-    render_graph::{RenderGraphExt, ViewNodeRunner},
-    render_resource::{
-        binding_types::{sampler, texture_2d},
-        *,
-    },
-    renderer::RenderDevice,
-    view::{ExtractedView, ViewTarget},
-    Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{extract_component::{ExtractComponent, ExtractComponentPlugin}, render_graph::{RenderGraphExt, ViewNodeRunner}, render_resource::{
+    binding_types::{sampler, texture_2d},
+    *,
+}, renderer::RenderDevice, view::{ExtractedView, ViewTarget}, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use bevy_shader::Shader;
 use bevy_utils::default;
 
@@ -88,8 +82,6 @@ impl Plugin for FxaaPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "fxaa.wgsl");
 
-        app.add_plugins(ExtractComponentPlugin::<Fxaa>::default());
-
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -118,6 +110,16 @@ impl Plugin for FxaaPlugin {
                     Node2d::EndMainPassPostProcessing,
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(ExtractComponentPlugin::<Fxaa>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

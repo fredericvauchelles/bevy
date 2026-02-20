@@ -2,7 +2,14 @@
 //! as *hierarchical levels of detail* or *HLOD*s.
 
 use super::VisibilityRange;
-use bevy_app::{App, Plugin};
+use crate::{
+    render_resource::BufferVec,
+    renderer::{RenderDevice, RenderQueue},
+    sync_world::{MainEntity, MainEntityHashMap},
+    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
+};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_ecs::{
     entity::Entity,
     lifecycle::RemovedComponents,
@@ -13,16 +20,10 @@ use bevy_ecs::{
 };
 use bevy_math::{vec4, Vec4};
 use bevy_platform::collections::HashMap;
+use bevy_render::RenderPlugin;
 use bevy_utils::prelude::default;
 use nonmax::NonMaxU16;
 use wgpu::{BufferBindingType, BufferUsages};
-
-use crate::{
-    render_resource::BufferVec,
-    renderer::{RenderDevice, RenderQueue},
-    sync_world::{MainEntity, MainEntityHashMap},
-    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
-};
 
 /// We need at least 4 storage buffer bindings available to enable the
 /// visibility range buffer.
@@ -54,6 +55,10 @@ impl Plugin for RenderVisibilityRangePlugin {
                 Render,
                 write_render_visibility_ranges.in_set(RenderSystems::PrepareResourcesFlush),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(?RenderPlugin).into()
     }
 }
 

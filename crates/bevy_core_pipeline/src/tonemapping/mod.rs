@@ -1,6 +1,7 @@
 use bevy_app::prelude::*;
 use bevy_asset::{
-    embedded_asset, load_embedded_asset, AssetServer, Assets, Handle, RenderAssetUsages,
+    embedded_asset, load_embedded_asset, AssetPlugin, AssetServer, Assets, Handle,
+    RenderAssetUsages,
 };
 use bevy_camera::Camera;
 use bevy_ecs::prelude::*;
@@ -17,7 +18,7 @@ use bevy_render::{
     renderer::RenderDevice,
     texture::{FallbackImage, GpuImage},
     view::{ExtractedView, ViewTarget, ViewUniform},
-    Render, RenderApp, RenderStartup, RenderSystems,
+    Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems,
 };
 use bevy_shader::{load_shader_library, Shader, ShaderDefVal};
 use bitflags::bitflags;
@@ -82,13 +83,6 @@ impl Plugin for TonemappingPlugin {
             app.insert_resource(tonemapping_luts);
         }
 
-        app.add_plugins(ExtractResourcePlugin::<TonemappingLuts>::default());
-
-        app.add_plugins((
-            ExtractComponentPlugin::<Tonemapping>::default(),
-            ExtractComponentPlugin::<DebandDither>::default(),
-        ));
-
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -99,6 +93,21 @@ impl Plugin for TonemappingPlugin {
                 Render,
                 prepare_view_tonemapping_pipelines.in_set(RenderSystems::Prepare),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(ExtractResourcePlugin::<TonemappingLuts>::default());
+
+            app.add_plugins((
+                ExtractComponentPlugin::<Tonemapping>::default(),
+                ExtractComponentPlugin::<DebandDither>::default(),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> crate::Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }
 

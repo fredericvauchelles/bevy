@@ -4,9 +4,13 @@ use crate::{
     renderer::{RenderAdapter, RenderDevice, RenderInstance},
     Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
 };
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_ecs::{entity::EntityHashMap, prelude::*};
 use bevy_platform::collections::HashSet;
+use bevy_render::render_asset::RenderAssetPlugin;
+use bevy_render::RenderPlugin;
 use bevy_utils::default;
 use bevy_window::{
     CompositeAlphaMode, PresentMode, PrimaryWindow, RawHandleWrapper, Window, WindowClosing,
@@ -28,7 +32,6 @@ pub struct WindowRenderPlugin;
 
 impl Plugin for WindowRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ScreenshotPlugin);
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
@@ -43,6 +46,16 @@ impl Plugin for WindowRenderPlugin {
                 )
                 .add_systems(Render, prepare_windows.in_set(RenderSystems::ManageViews));
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(ScreenshotPlugin);
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(?RenderPlugin).into()
     }
 }
 

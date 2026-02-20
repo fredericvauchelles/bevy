@@ -1,5 +1,6 @@
 use crate::ui_material::{MaterialNode, UiMaterial, UiMaterialKey};
 use crate::*;
+use alloc::borrow::Cow;
 use bevy_asset::*;
 use bevy_ecs::{
     prelude::{Component, With},
@@ -12,16 +13,7 @@ use bevy_ecs::{
 use bevy_image::BevyDefault as _;
 use bevy_math::{Affine2, FloatOrd, Rect, Vec2};
 use bevy_mesh::VertexBufferLayout;
-use bevy_render::{
-    globals::{GlobalsBuffer, GlobalsUniform},
-    render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets},
-    render_phase::*,
-    render_resource::{binding_types::uniform_buffer, *},
-    renderer::{RenderDevice, RenderQueue},
-    sync_world::{MainEntity, TemporaryRenderEntity},
-    view::*,
-    Extract, ExtractSchedule, Render, RenderSystems,
-};
+use bevy_render::{globals::{GlobalsBuffer, GlobalsUniform}, render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets}, render_phase::*, render_resource::{binding_types::uniform_buffer, *}, renderer::{RenderDevice, RenderQueue}, sync_world::{MainEntity, TemporaryRenderEntity}, view::*, Extract, ExtractSchedule, Render, RenderPlugin, RenderSystems};
 use bevy_render::{RenderApp, RenderStartup};
 use bevy_shader::{load_shader_library, Shader, ShaderRef};
 use bevy_sprite::BorderRect;
@@ -49,8 +41,7 @@ where
         embedded_asset!(app, "ui_material.wgsl");
 
         app.init_asset::<M>()
-            .register_type::<MaterialNode<M>>()
-            .add_plugins(RenderAssetPlugin::<PreparedUiMaterial<M>>::default());
+            .register_type::<MaterialNode<M>>();
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
@@ -71,6 +62,17 @@ where
                     ),
                 );
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app
+                .add_plugins(RenderAssetPlugin::<PreparedUiMaterial<M>>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

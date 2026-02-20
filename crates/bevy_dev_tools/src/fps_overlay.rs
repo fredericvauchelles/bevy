@@ -1,5 +1,9 @@
 //! Module containing logic for FPS overlay.
 
+use crate::frame_time_graph::{
+    FrameTimeGraphConfigUniform, FrameTimeGraphPlugin, FrametimeGraphMaterial,
+};
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{Plugin, Startup, Update};
 use bevy_asset::{Assets, Handle};
 use bevy_color::Color;
@@ -25,10 +29,6 @@ use bevy_ui::{
 use bevy_ui_render::prelude::MaterialNode;
 use core::time::Duration;
 use tracing::warn;
-
-use crate::frame_time_graph::{
-    FrameTimeGraphConfigUniform, FrameTimeGraphPlugin, FrametimeGraphMaterial,
-};
 
 /// [`GlobalZIndex`] used to render the fps overlay.
 ///
@@ -57,15 +57,6 @@ pub struct FpsOverlayPlugin {
 
 impl Plugin for FpsOverlayPlugin {
     fn build(&self, app: &mut bevy_app::App) {
-        // TODO: Use plugin dependencies, see https://github.com/bevyengine/bevy/issues/69
-        if !app.is_plugin_added::<FrameTimeDiagnosticsPlugin>() {
-            app.add_plugins(FrameTimeDiagnosticsPlugin::default());
-        }
-
-        if !app.is_plugin_added::<FrameTimeGraphPlugin>() {
-            app.add_plugins(FrameTimeGraphPlugin);
-        }
-
         if self.config.refresh_interval < MIN_SAFE_INTERVAL {
             warn!(
                 "Low refresh interval ({:?}) may degrade performance. \
@@ -84,6 +75,19 @@ impl Plugin for FpsOverlayPlugin {
                     update_text.run_if(on_timer(self.config.refresh_interval)),
                 ),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            // TODO: Use plugin dependencies, see https://github.com/bevyengine/bevy/issues/69
+            if !app.is_plugin_added::<FrameTimeDiagnosticsPlugin>() {
+                app.add_plugins(FrameTimeDiagnosticsPlugin::default());
+            }
+
+            if !app.is_plugin_added::<FrameTimeGraphPlugin>() {
+                app.add_plugins(FrameTimeGraphPlugin);
+            }
+        }))
     }
 }
 

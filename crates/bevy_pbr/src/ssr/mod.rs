@@ -1,6 +1,14 @@
 //! Screen space reflections implemented via raymarching.
 
-use bevy_app::{App, Plugin};
+use crate::{
+    binding_arrays_are_usable, graph::NodePbr, ExtractedAtmosphere, MeshPipelineViewLayoutKey,
+    MeshPipelineViewLayouts, MeshViewBindGroup, RenderViewLightProbes,
+    ViewEnvironmentMapUniformOffset, ViewFogUniformOffset, ViewLightProbesUniformOffset,
+    ViewLightsUniformOffset,
+};
+use alloc::borrow::Cow;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{load_embedded_asset, AssetServer, Handle};
 use bevy_core_pipeline::{
     core_3d::{
@@ -24,34 +32,19 @@ use bevy_ecs::{
 use bevy_image::BevyDefault as _;
 use bevy_light::EnvironmentMapLight;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    diagnostic::RecordDiagnostics,
-    extract_component::{ExtractComponent, ExtractComponentPlugin},
-    render_graph::{
-        NodeRunError, RenderGraph, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner,
-    },
-    render_resource::{
-        binding_types, AddressMode, BindGroupEntries, BindGroupLayoutDescriptor,
-        BindGroupLayoutEntries, CachedRenderPipelineId, ColorTargetState, ColorWrites,
-        DynamicUniformBuffer, FilterMode, FragmentState, Operations, PipelineCache,
-        RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor, Sampler,
-        SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType, SpecializedRenderPipeline,
-        SpecializedRenderPipelines, TextureFormat, TextureSampleType,
-    },
-    renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue},
-    view::{ExtractedView, Msaa, ViewTarget, ViewUniformOffset},
-    Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{diagnostic::RecordDiagnostics, extract_component::{ExtractComponent, ExtractComponentPlugin}, render_graph::{
+    NodeRunError, RenderGraph, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner,
+}, render_resource::{
+    binding_types, AddressMode, BindGroupEntries, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntries, CachedRenderPipelineId, ColorTargetState, ColorWrites,
+    DynamicUniformBuffer, FilterMode, FragmentState, Operations, PipelineCache,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor, Sampler,
+    SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType, SpecializedRenderPipeline,
+    SpecializedRenderPipelines, TextureFormat, TextureSampleType,
+}, renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue}, view::{ExtractedView, Msaa, ViewTarget, ViewUniformOffset}, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use bevy_shader::{load_shader_library, Shader};
 use bevy_utils::{once, prelude::default};
 use tracing::info;
-
-use crate::{
-    binding_arrays_are_usable, graph::NodePbr, ExtractedAtmosphere, MeshPipelineViewLayoutKey,
-    MeshPipelineViewLayouts, MeshViewBindGroup, RenderViewLightProbes,
-    ViewEnvironmentMapUniformOffset, ViewFogUniformOffset, ViewLightProbesUniformOffset,
-    ViewLightsUniformOffset,
-};
 
 /// Enables screen-space reflections for a camera.
 ///
@@ -187,8 +180,6 @@ impl Plugin for ScreenSpaceReflectionsPlugin {
         load_shader_library!(app, "ssr.wgsl");
         load_shader_library!(app, "raymarch.wgsl");
 
-        app.add_plugins(ExtractComponentPlugin::<ScreenSpaceReflections>::default());
-
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -214,6 +205,16 @@ impl Plugin for ScreenSpaceReflectionsPlugin {
                 Core3d,
                 NodePbr::ScreenSpaceReflections,
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(ExtractComponentPlugin::<ScreenSpaceReflections>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -3,9 +3,11 @@ use crate::{
     renderer::{RenderDevice, RenderQueue},
     sync_component::SyncComponentPlugin,
     sync_world::RenderEntity,
-    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
+    Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems,
 };
-use bevy_app::{App, Plugin};
+use alloc::borrow::Cow;
+use bevy_app::app_builder::AppBuilder;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_ecs::{
     bundle::NoBundleEffect,
@@ -13,9 +15,8 @@ use bevy_ecs::{
     prelude::*,
     query::{QueryFilter, QueryItem, ReadOnlyQueryData},
 };
-use core::{marker::PhantomData, ops::Deref};
-
 pub use bevy_render_macros::ExtractComponent;
+use core::{marker::PhantomData, ops::Deref};
 
 /// Stores the index of a uniform inside of [`ComponentUniforms`].
 #[derive(Component)]
@@ -90,6 +91,9 @@ impl<C: Component + ShaderType + WriteInto + Clone> Plugin for UniformComponentP
                     prepare_uniform_components::<C>.in_set(RenderSystems::PrepareResources),
                 );
         }
+    }
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 
@@ -185,8 +189,6 @@ impl<C, F> ExtractComponentPlugin<C, F> {
 
 impl<C: ExtractComponent> Plugin for ExtractComponentPlugin<C> {
     fn build(&self, app: &mut App) {
-        app.add_plugins(SyncComponentPlugin::<C>::default());
-
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             if self.only_extract_visible {
                 render_app.add_systems(ExtractSchedule, extract_visible_components::<C>);
@@ -194,6 +196,16 @@ impl<C: ExtractComponent> Plugin for ExtractComponentPlugin<C> {
                 render_app.add_systems(ExtractSchedule, extract_components::<C>);
             }
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(SyncComponentPlugin::<C>::default());
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

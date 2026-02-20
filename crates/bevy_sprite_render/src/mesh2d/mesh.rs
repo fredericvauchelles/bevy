@@ -1,7 +1,8 @@
-use bevy_app::Plugin;
-use bevy_asset::{embedded_asset, load_embedded_asset, AssetId, AssetServer, Handle};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, Plugin, PluginDependency};
+use bevy_asset::{embedded_asset, load_embedded_asset, AssetId, AssetPlugin, AssetServer, Handle};
 use bevy_camera::{visibility::ViewVisibility, Camera2d};
-use bevy_render::RenderStartup;
+use bevy_render::{RenderPlugin, RenderStartup};
 use bevy_shader::{load_shader_library, Shader, ShaderDefVal, ShaderSettings};
 
 use crate::{tonemapping_pipeline_key, Material2dBindGroupId};
@@ -110,6 +111,10 @@ impl Plugin for Mesh2dRenderPlugin {
                     ),
                 );
         }
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }
 

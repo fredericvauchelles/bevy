@@ -1,6 +1,7 @@
+use alloc::borrow::Cow;
 use async_channel::{Receiver, Sender};
 
-use bevy_app::{App, AppExit, AppLabel, Plugin, SubApp};
+use bevy_app::{plugin_deps, App, AppExit, AppLabel, Plugin, PluginDependency, SubApp};
 use bevy_ecs::{
     resource::Resource,
     schedule::MainThreadExecutor,
@@ -8,7 +9,7 @@ use bevy_ecs::{
 };
 use bevy_tasks::ComputeTaskPool;
 
-use crate::RenderApp;
+use crate::{RenderApp, RenderPlugin};
 
 /// A Label for the sub app that runs the parts of pipelined rendering that need to run on the main thread.
 ///
@@ -175,6 +176,10 @@ impl Plugin for PipelinedRenderingPlugin {
 
             tracing::debug!("exiting pipelined rendering thread");
         });
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(?RenderPlugin).into()
     }
 }
 

@@ -623,6 +623,7 @@ impl App {
     ///
     /// [`PluginGroup`]:super::PluginGroup
     #[track_caller]
+    #[deprecated(since = "0.18.0", note = "Use AppBuilder::add_plugins instead")]
     pub fn add_plugins<M>(&mut self, plugins: impl Plugins<M>) -> &mut Self {
         if matches!(
             self.plugins_state(),

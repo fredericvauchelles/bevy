@@ -1,3 +1,4 @@
+use alloc::borrow::Cow;
 use bevy_app::prelude::*;
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer};
 use bevy_camera::Camera;
@@ -9,17 +10,10 @@ use bevy_core_pipeline::{
 use bevy_ecs::{prelude::*, query::QueryItem};
 use bevy_image::BevyDefault as _;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{
-    extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin},
-    render_graph::RenderGraphExt,
-    render_resource::{
-        binding_types::{sampler, texture_2d, uniform_buffer},
-        *,
-    },
-    renderer::RenderDevice,
-    view::{ExtractedView, ViewTarget},
-    Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin}, render_graph::RenderGraphExt, render_resource::{
+    binding_types::{sampler, texture_2d, uniform_buffer},
+    *,
+}, renderer::RenderDevice, view::{ExtractedView, ViewTarget}, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 
 mod node;
 
@@ -103,11 +97,6 @@ impl Plugin for CasPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "robust_contrast_adaptive_sharpening.wgsl");
 
-        app.add_plugins((
-            ExtractComponentPlugin::<ContrastAdaptiveSharpening>::default(),
-            UniformComponentPlugin::<CasUniform>::default(),
-        ));
-
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -149,6 +138,19 @@ impl Plugin for CasPlugin {
                     ),
                 );
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractComponentPlugin::<ContrastAdaptiveSharpening>::default(),
+                UniformComponentPlugin::<CasUniform>::default(),
+            ));
+        }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

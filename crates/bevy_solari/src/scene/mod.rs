@@ -3,24 +3,18 @@ mod blas;
 mod extract;
 mod types;
 
+use alloc::borrow::Cow;
 use bevy_shader::load_shader_library;
 pub use binder::RaytracingSceneBindings;
 pub use types::RaytracingMesh3d;
 
 use crate::SolariPlugins;
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use bevy_render::{
-    extract_resource::ExtractResourcePlugin,
-    mesh::{
-        allocator::{allocate_and_free_meshes, MeshAllocator},
-        RenderMesh,
-    },
-    render_asset::prepare_assets,
-    render_resource::BufferUsages,
-    renderer::RenderDevice,
-    ExtractSchedule, Render, RenderApp, RenderSystems,
-};
+use bevy_render::{extract_resource::ExtractResourcePlugin, mesh::{
+    allocator::{allocate_and_free_meshes, MeshAllocator},
+    RenderMesh,
+}, render_asset::prepare_assets, render_resource::BufferUsages, renderer::RenderDevice, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems};
 use binder::prepare_raytracing_scene_bindings;
 use blas::{compact_raytracing_blas, prepare_raytracing_blas, BlasManager};
 use extract::{extract_raytracing_scene, StandardMaterialAssets};
@@ -75,5 +69,9 @@ impl Plugin for RaytracingScenePlugin {
                     prepare_raytracing_scene_bindings.in_set(RenderSystems::PrepareBindGroups),
                 ),
             );
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }

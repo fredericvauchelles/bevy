@@ -14,6 +14,7 @@ use crate::{
     Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
 };
 
+use bevy_app::app_builder::AppBuilder;
 use bevy_app::{App, Plugin, PostStartup, PostUpdate};
 use bevy_asset::{AssetEvent, AssetEventSystems, AssetId, Assets};
 use bevy_camera::{
@@ -57,10 +58,6 @@ impl Plugin for CameraPlugin {
             .register_required_components::<Camera, SyncToRenderWorld>()
             .register_required_components::<Camera3d, ColorGrading>()
             .register_required_components::<Camera3d, Exposure>()
-            .add_plugins((
-                ExtractResourcePlugin::<ClearColor>::default(),
-                ExtractComponentPlugin::<CameraMainTextureUsages>::default(),
-            ))
             .add_systems(PostStartup, camera_system.in_set(CameraUpdateSystems))
             .add_systems(
                 PostUpdate,
@@ -82,6 +79,15 @@ impl Plugin for CameraPlugin {
             let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
             render_graph.add_node(crate::graph::CameraDriverLabel, camera_driver_node);
         }
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                ExtractResourcePlugin::<ClearColor>::default(),
+                ExtractComponentPlugin::<CameraMainTextureUsages>::default(),
+            ));
+        }))
     }
 }
 

@@ -98,7 +98,6 @@ struct CustomMaterialPlugin;
 
 impl Plugin for CustomMaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ExtractComponentPlugin::<InstanceMaterialData>::default());
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<SpecializedMeshPipelines<CustomPipeline>>()
@@ -110,6 +109,11 @@ impl Plugin for CustomMaterialPlugin {
                     prepare_instance_buffers.in_set(RenderSystems::PrepareResources),
                 ),
             );
+    }
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins(ExtractComponentPlugin::<InstanceMaterialData>::default());
+        }))
     }
 }
 

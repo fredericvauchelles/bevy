@@ -1,5 +1,6 @@
 //! Manages mesh vertex and index buffers.
 
+use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use bevy_mesh::Indices;
 use core::{
@@ -8,7 +9,14 @@ use core::{
 };
 use nonmax::NonMaxU32;
 
-use bevy_app::{App, Plugin};
+use crate::{
+    mesh::{Mesh, MeshVertexBufferLayouts, RenderMesh},
+    render_asset::{prepare_assets, ExtractedAssets},
+    render_resource::Buffer,
+    renderer::{RenderAdapter, RenderDevice, RenderQueue},
+    Render, RenderApp, RenderSystems,
+};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::AssetId;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -18,20 +26,13 @@ use bevy_ecs::{
     world::{FromWorld, World},
 };
 use bevy_platform::collections::{hash_map::Entry, HashMap, HashSet};
+use bevy_render::RenderPlugin;
 use bevy_utils::default;
 use offset_allocator::{Allocation, Allocator};
 use tracing::error;
 use wgpu::{
     BufferDescriptor, BufferSize, BufferUsages, CommandEncoderDescriptor, DownlevelFlags,
     COPY_BUFFER_ALIGNMENT,
-};
-
-use crate::{
-    mesh::{Mesh, MeshVertexBufferLayouts, RenderMesh},
-    render_asset::{prepare_assets, ExtractedAssets},
-    render_resource::Buffer,
-    renderer::{RenderAdapter, RenderDevice, RenderQueue},
-    Render, RenderApp, RenderSystems,
 };
 
 /// A plugin that manages GPU memory for mesh data.
@@ -341,6 +342,10 @@ impl Plugin for MeshAllocatorPlugin {
         // The `RenderAdapter` isn't available until now, so we can't do this in
         // [`Plugin::build`].
         render_app.init_resource::<MeshAllocator>();
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 
