@@ -19,6 +19,7 @@ pub mod upscaling;
 
 pub use fullscreen_vertex_shader::FullscreenShader;
 pub use skybox::Skybox;
+use std::borrow::Cow;
 
 mod fullscreen_vertex_shader;
 mod skybox;
@@ -29,8 +30,8 @@ use crate::{
     experimental::mip_generation::MipGenerationPlugin, tonemapping::TonemappingPlugin,
     upscaling::UpscalingPlugin,
 };
-use bevy_app::{App, Plugin};
-use bevy_asset::embedded_asset;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_asset::{embedded_asset, AssetPlugin};
 use bevy_render::RenderApp;
 use oit::OrderIndependentTransparencyPlugin;
 
@@ -53,5 +54,9 @@ impl Plugin for CorePipelinePlugin {
             return;
         };
         render_app.init_resource::<FullscreenShader>();
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(AssetPlugin).into()
     }
 }

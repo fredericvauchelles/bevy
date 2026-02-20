@@ -279,8 +279,7 @@ impl PluginGraph {
                 } else if is_required {
                     Err(PluginGraphBuildError::MissingRequiredPlugin(from.clone()))?
                 } else {
-                    #[cfg(feature = "trace")]
-                    warn!(
+                    log::warn!(
                         "Optional dependency not found: {plugin_id} should build after {from} (not found)"
                     );
                 }
@@ -295,8 +294,7 @@ impl PluginGraph {
                 } else if is_required {
                     Err(PluginGraphBuildError::MissingRequiredPlugin(to.clone()))?
                 } else {
-                    #[cfg(feature = "trace")]
-                    warn!(
+                    log::warn!(
                         "Optional dependency not found: {plugin_id} should build before {to} (not found)"
                     );
                 }
@@ -335,10 +333,9 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
     fn try_from(value: PluginGraph) -> Result<Self, Self::Error> {
         let sorted = value.try_into_sorted_plugins()?;
 
-        #[cfg(feature = "trace")]
         {
             use bevy_platform::prelude::*;
-            trace!("Sorted plugins: {}", sorted.iter().map(|n| n.plugin().id().to_string()).collect::<Vec<_>>().join(", "));
+            log::trace!("Sorted plugins: {}", sorted.iter().map(|n| n.plugin().id().to_string()).collect::<Vec<_>>().join(", "));
         }
         let mut result = PluginGraphPluginGroup.build();
         result.extend(sorted.into_iter().map(Into::into));
