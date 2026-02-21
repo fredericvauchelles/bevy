@@ -44,6 +44,7 @@ impl RenderGraphExt for World {
             "RenderGraph not found. Make sure you are using add_render_graph_node on the RenderApp",
         );
         if let Some(graph) = render_graph.get_sub_graph_mut(sub_graph) {
+            tracing::trace!("Adding render node {} ({:?}, {:?})", core::any::type_name::<T>(), sub_graph, node_label);
             graph.add_node(node_label, node);
         } else {
             warn!(

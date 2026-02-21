@@ -3,6 +3,7 @@ use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer};
 use bevy_camera::{Camera, Camera3d};
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
     prepass::{DepthPrepass, MotionVectorPrepass, ViewPrepassTextures},
@@ -77,7 +78,7 @@ impl Plugin for TemporalAntiAliasPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, Core3dPlugin, "bevy_post_process::motion_blur::MotionBlurPlugin").into()
     }
 }
 

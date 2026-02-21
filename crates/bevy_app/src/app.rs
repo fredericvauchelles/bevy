@@ -1,7 +1,4 @@
-use crate::{
-    First, Main, MainSchedulePlugin, PlaceholderPlugin, Plugin, Plugins, PluginsState, SubApp,
-    SubApps,
-};
+use crate::{First, Main, MainSchedulePlugin, PlaceholderPlugin, Plugin, PluginGroup, Plugins, PluginsState, SubApp, SubApps};
 use alloc::{
     boxed::Box,
     string::{String, ToString},
@@ -28,6 +25,7 @@ use log::debug;
 #[cfg(feature = "trace")]
 use tracing::info_span;
 
+use bevy_app::PluginGroupBuilder;
 #[cfg(feature = "std")]
 use std::{
     panic::{catch_unwind, resume_unwind},
@@ -121,7 +119,15 @@ impl Default for App {
         #[cfg(feature = "reflect_functions")]
         app.init_resource::<AppFunctionRegistry>();
 
-        app.add_plugins(MainSchedulePlugin);
+        struct DefaultPluginGroup;
+        impl PluginGroup for DefaultPluginGroup {
+            fn build(self) -> PluginGroupBuilder {
+                PluginGroupBuilder::start::<Self>()
+                    .add(MainSchedulePlugin)
+            }
+        }
+        DefaultPluginGroup.build().finish(&mut app);
+
         app.add_systems(
             First,
             message_update_system

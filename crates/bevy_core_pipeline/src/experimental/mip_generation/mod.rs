@@ -5,10 +5,7 @@
 //! designed only for power-of-two texture sizes and is slightly incorrect for
 //! non-power-of-two depth buffer sizes.
 
-use crate::core_3d::{
-    graph::{Core3d, Node3d},
-    prepare_core_3d_depth_textures,
-};
+use crate::core_3d::{graph::{Core3d, Node3d}, prepare_core_3d_depth_textures, Core3dPlugin};
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, Handle};
 use bevy_derive::{Deref, DerefMut};
@@ -122,7 +119,7 @@ impl Plugin for MipGenerationPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, Core3dPlugin).into()
     }
 }
 

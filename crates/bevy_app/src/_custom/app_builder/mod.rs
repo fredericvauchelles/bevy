@@ -143,9 +143,6 @@ impl AppBuilder {
     pub fn run_with(mut self, runner: impl FnOnce(App) -> AppExit) -> Result<AppExit, BevyError> {
         self.pre_build_recursive();
 
-        use bevy_platform::prelude::ToString;
-        log::debug!("App plugins: {}", self.plugin_graph.iter_plugins().map(|p| p.plugin().id().to_string()).collect::<Vec<_>>().join(", "));
-
         let mut app = App::new();
         let plugin_group = self.plugin_graph.try_into_plugin_group_builder()?;
 

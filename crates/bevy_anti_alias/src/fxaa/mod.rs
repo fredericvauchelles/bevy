@@ -2,6 +2,8 @@ use alloc::borrow::Cow;
 use bevy_app::prelude::*;
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_camera::Camera;
+use bevy_core_pipeline::core_2d::Core2dPlugin;
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::{
     core_2d::graph::{Core2d, Node2d},
     core_3d::graph::{Core3d, Node3d},
@@ -119,7 +121,7 @@ impl Plugin for FxaaPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, ?Core3dPlugin, ?Core2dPlugin).into()
     }
 }
 

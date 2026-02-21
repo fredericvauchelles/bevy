@@ -1,8 +1,6 @@
-use crate::{
-    render_resource::AsBindGroupError, Extract, ExtractSchedule, MainWorld, Render, RenderApp,
-    RenderSystems, Res,
-};
-use bevy_app::{App, Plugin, SubApp};
+use crate::{render_resource::AsBindGroupError, Extract, ExtractSchedule, MainWorld, Render, RenderApp, RenderPlugin, RenderSystems, Res};
+use alloc::borrow::Cow;
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency, SubApp};
 use bevy_asset::{Asset, AssetEvent, AssetId, Assets, RenderAssetUsages};
 use bevy_ecs::{
     prelude::{Commands, IntoScheduleConfigs, MessageReader, ResMut, Resource},
@@ -148,6 +146,10 @@ impl<A: RenderAsset, AFTER: RenderAssetDependency + 'static> Plugin
                 prepare_assets::<A>.in_set(RenderSystems::PrepareAssets),
             );
         }
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

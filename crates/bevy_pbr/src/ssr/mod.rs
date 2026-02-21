@@ -10,6 +10,7 @@ use alloc::borrow::Cow;
 use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{load_embedded_asset, AssetServer, Handle};
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::{
     core_3d::{
         graph::{Core3d, Node3d},
@@ -214,7 +215,7 @@ impl Plugin for ScreenSpaceReflectionsPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, Core3dPlugin).into()
     }
 }
 

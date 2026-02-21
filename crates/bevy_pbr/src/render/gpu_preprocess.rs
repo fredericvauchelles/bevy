@@ -12,7 +12,6 @@ use core::num::{NonZero, NonZeroU64};
 use crate::{graph::NodePbr, MeshCullingData, MeshCullingDataBuffer, MeshInputUniform, MeshRenderPlugin, MeshUniform};
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, Handle};
-use bevy_core_pipeline::experimental::mip_generation::MipGenerationPlugin;
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
     experimental::mip_generation::ViewDepthPyramid,
@@ -504,7 +503,7 @@ impl Plugin for GpuMeshPreprocessPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, MeshRenderPlugin, MipGenerationPlugin).into()
+        plugin_deps!(RenderPlugin, MeshRenderPlugin).into()
     }
 }
 

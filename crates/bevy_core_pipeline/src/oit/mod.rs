@@ -1,5 +1,7 @@
 //! Order Independent Transparency (OIT) for 3d rendering. See [`OrderIndependentTransparencyPlugin`] for more details.
 
+use crate::core_3d::graph::{Core3d, Node3d};
+use crate::core_3d::Core3dPlugin;
 use bevy_app::prelude::*;
 use bevy_camera::{Camera3d, RenderTarget};
 use bevy_ecs::{component::*, lifecycle::ComponentHook, prelude::*};
@@ -24,8 +26,6 @@ use resolve::{
 };
 use std::borrow::Cow;
 use tracing::{trace, warn};
-
-use crate::core_3d::graph::{Core3d, Node3d};
 
 /// Module that defines the necessary systems to resolve the OIT buffer and render it to the screen.
 pub mod resolve;
@@ -136,7 +136,7 @@ impl Plugin for OrderIndependentTransparencyPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, Core3dPlugin).into()
     }
 }
 

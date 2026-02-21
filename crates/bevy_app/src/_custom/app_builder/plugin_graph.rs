@@ -386,7 +386,7 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
 
         {
             use bevy_platform::prelude::*;
-            log::trace!("Sorted plugins: {}", sorted.iter().map(|n| n.plugin().id().to_string()).collect::<Vec<_>>().join(", "));
+            log::trace!("Sorted plugins:\n\n[\n{}\n]", sorted.iter().map(|n| format!("\"{}\"", n.plugin().id())).collect::<Vec<_>>().join(",\n"));
         }
         let mut result = PluginGraphPluginGroup.build();
         result.extend(sorted.into_iter().map(Into::into));
