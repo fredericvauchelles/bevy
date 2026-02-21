@@ -37,6 +37,7 @@ use bevy_utils::prelude::default;
 use std::borrow::Cow;
 
 use crate::bloom::BloomPlugin;
+use crate::dof::DepthOfFieldPlugin;
 use bevy_core_pipeline::{
     core_2d::graph::{Core2d, Node2d},
     core_3d::graph::{Core3d, Node3d},
@@ -243,7 +244,7 @@ impl Plugin for EffectStackPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, ImagePlugin, BloomPlugin).into()
+        plugin_deps!(RenderPlugin, ImagePlugin, BloomPlugin, DepthOfFieldPlugin).into()
     }
 }
 
