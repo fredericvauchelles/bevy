@@ -34,6 +34,8 @@ use alloc::borrow::Cow;
 use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
+use bevy_core_pipeline::core_2d::Core2dPlugin;
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 #[cfg(not(feature = "smaa_luts"))]
 use bevy_core_pipeline::tonemapping::lut_placeholder;
 use bevy_core_pipeline::{
@@ -369,7 +371,7 @@ impl Plugin for SmaaPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, ImagePlugin).into()
+        plugin_deps!(RenderPlugin, ImagePlugin, Core3dPlugin, Core2dPlugin).into()
     }
 }
 

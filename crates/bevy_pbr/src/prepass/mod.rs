@@ -55,6 +55,7 @@ use crate::meshlet::{
 
 use alloc::sync::Arc;
 use bevy_app::app_builder::AppBuilder;
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{change_detection::Tick, system::SystemChangeTick};
 use bevy_platform::collections::HashMap;
@@ -194,7 +195,7 @@ impl Plugin for PrepassPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, Core3dPlugin).into()
     }
 }
 

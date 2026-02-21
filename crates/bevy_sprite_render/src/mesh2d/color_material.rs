@@ -19,6 +19,7 @@ impl Plugin for ColorMaterialPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "color_material.wgsl");
 
+        app.init_asset::<ColorMaterial>();
         app.register_asset_reflect::<ColorMaterial>();
 
         // Initialize the default material handle.

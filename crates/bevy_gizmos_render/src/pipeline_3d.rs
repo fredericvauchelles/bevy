@@ -14,6 +14,7 @@ use bevy_core_pipeline::{
 };
 use bevy_gizmos::config::{GizmoLineJoint, GizmoLineStyle, GizmoMeshConfig};
 
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_ecs::{
     error::BevyError,
     prelude::Entity,
@@ -62,7 +63,7 @@ impl Plugin for LineGizmo3dPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
+        plugin_deps!(?RenderPlugin, ?Core3dPlugin).into()
     }
 }
 

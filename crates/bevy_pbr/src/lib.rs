@@ -147,6 +147,7 @@ use bevy_render::{
     ExtractSchedule, Render, RenderApp, RenderDebugFlags, RenderStartup, RenderSystems,
 };
 
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use std::path::PathBuf;
 
 fn shader_ref(path: PathBuf) -> ShaderRef {
@@ -215,6 +216,7 @@ impl Plugin for PbrPlugin {
         // Setup dummy shaders for when MeshletPlugin is not used to prevent shader import errors.
         load_shader_library!(app, "meshlet/dummy_visibility_buffer_resolve.wgsl");
 
+        app.init_asset::<StandardMaterial>();
         app.register_asset_reflect::<StandardMaterial>()
             .init_resource::<DefaultOpaqueRendererMethod>()
             .configure_sets(
@@ -379,7 +381,7 @@ impl Plugin for PbrPlugin {
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin, ImagePlugin).into()
+        plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin, ImagePlugin, Core3dPlugin).into()
     }
 }
 

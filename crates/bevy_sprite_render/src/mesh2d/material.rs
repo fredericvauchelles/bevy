@@ -9,6 +9,7 @@ use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PostUpdate};
 use bevy_asset::prelude::AssetChanged;
 use bevy_asset::{AsAssetId, Asset, AssetApp, AssetEventSystems, AssetId, AssetPlugin, AssetServer, Handle};
 use bevy_camera::visibility::ViewVisibility;
+use bevy_core_pipeline::core_2d::Core2dPlugin;
 use bevy_core_pipeline::{
     core_2d::{
         AlphaMask2d, AlphaMask2dBinKey, BatchSetKey2d, Opaque2d, Opaque2dBinKey, Transparent2d,
@@ -315,7 +316,7 @@ where
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin, ?RenderPlugin).into()
+        plugin_deps!(AssetPlugin, ?RenderPlugin, Core2dPlugin).into()
     }
 }
 

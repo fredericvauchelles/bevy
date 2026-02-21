@@ -1,6 +1,8 @@
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_camera::MsaaWriteback;
 use bevy_color::LinearRgba;
+use bevy_core_pipeline::core_2d::Core2dPlugin;
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::{
     blit::{BlitPipeline, BlitPipelineKey},
     core_2d::graph::{Core2d, Node2d},
@@ -43,7 +45,7 @@ impl Plugin for MsaaWritebackPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
+        plugin_deps!(?RenderPlugin, Core2dPlugin, Core3dPlugin).into()
     }
 }
 
