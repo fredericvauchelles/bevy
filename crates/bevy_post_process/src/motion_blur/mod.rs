@@ -2,6 +2,7 @@
 //!
 //! Add the [`MotionBlur`] component to a camera to enable motion blur.
 
+use crate::bloom::BloomPlugin;
 use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::embedded_asset;
@@ -168,6 +169,6 @@ impl Plugin for MotionBlurPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, BloomPlugin).into()
     }
 }

@@ -421,7 +421,8 @@ impl Plugin for RenderPlugin {
     }
 
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
+        let debug_flags = self.debug_flags;
+        Some(Box::new(move |app| {
             app.add_plugins((
                 WindowRenderPlugin,
                 CameraPlugin,
@@ -432,7 +433,7 @@ impl Plugin for RenderPlugin {
                 mesh::MorphPlugin,
                 TexturePlugin,
                 BatchingPlugin {
-                    debug_flags: self.debug_flags,
+                    debug_flags
                 },
                 SyncWorldPlugin,
                 StoragePlugin,

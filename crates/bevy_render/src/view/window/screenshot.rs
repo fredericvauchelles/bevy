@@ -14,7 +14,6 @@ use crate::{
     ExtractSchedule, MainWorld, Render, RenderApp, RenderStartup, RenderSystems,
 };
 use alloc::{borrow::Cow, sync::Arc};
-use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, First, Plugin, PluginDependency, Update};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle, RenderAssetUsages};
 use bevy_camera::{ManualTextureViewHandle, NormalizedRenderTarget, RenderTarget};

@@ -133,7 +133,7 @@ use bevy_core_pipeline::core_3d::graph::{Core3d, Node3d};
 use bevy_ecs::prelude::*;
 #[cfg(feature = "bluenoise_texture")]
 use bevy_image::{CompressedImageFormats, ImageType};
-use bevy_image::{Image, ImageSampler};
+use bevy_image::{Image, ImagePlugin, ImageSampler};
 use bevy_render::{
     alpha::AlphaMode,
     camera::sort_cameras,
@@ -334,17 +334,20 @@ impl Plugin for PbrPlugin {
     }
 
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
+        let use_gpu_instance_buffer_builder = self.use_gpu_instance_buffer_builder;
+        let debug_flags = self.debug_flags;
+        let add_default_deferred_lighting_plugin = self.add_default_deferred_lighting_plugin;
+        Some(Box::new(move |app| {
             app.add_plugins((
                 MeshRenderPlugin {
-                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
-                    debug_flags: self.debug_flags,
+                    use_gpu_instance_buffer_builder,
+                    debug_flags,
                 },
                 MaterialsPlugin {
-                    debug_flags: self.debug_flags,
+                    debug_flags,
                 },
                 MaterialPlugin::<StandardMaterial> {
-                    debug_flags: self.debug_flags,
+                    debug_flags,
                     ..Default::default()
                 },
                 ScreenSpaceAmbientOcclusionPlugin,
@@ -354,7 +357,7 @@ impl Plugin for PbrPlugin {
                 LightmapPlugin,
                 LightProbePlugin,
                 GpuMeshPreprocessPlugin {
-                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
+                    use_gpu_instance_buffer_builder,
                 },
                 VolumetricFogPlugin,
                 ScreenSpaceReflectionsPlugin,
@@ -369,14 +372,14 @@ impl Plugin for PbrPlugin {
                 ))
                 .add_plugins((ScatteringMediumPlugin, AtmospherePlugin));
 
-            if self.add_default_deferred_lighting_plugin {
+            if add_default_deferred_lighting_plugin {
                 app.add_plugins(DeferredPbrLightingPlugin);
             }
         }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin).into()
+        plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin, ImagePlugin).into()
     }
 }
 

@@ -9,7 +9,6 @@ use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_ecs::{entity::EntityHashMap, prelude::*};
 use bevy_platform::collections::HashSet;
-use bevy_render::render_asset::RenderAssetPlugin;
 use bevy_render::RenderPlugin;
 use bevy_utils::default;
 use bevy_window::{

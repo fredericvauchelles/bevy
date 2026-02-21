@@ -25,11 +25,11 @@ use bevy_shader::load_shader_library;
 use bevy_transform::{components::Transform, prelude::GlobalTransform};
 use tracing::error;
 
-use core::{hash::Hash, ops::Deref};
-
 use crate::{
     generate::EnvironmentMapGenerationPlugin, light_probe::environment_map::EnvironmentMapIds,
 };
+use bevy_app::app_builder::AppBuilder;
+use core::{hash::Hash, ops::Deref};
 
 pub mod environment_map;
 pub mod generate;
@@ -285,11 +285,6 @@ impl Plugin for LightProbePlugin {
         load_shader_library!(app, "environment_map.wgsl");
         load_shader_library!(app, "irradiance_volume.wgsl");
 
-        app.add_plugins((
-            EnvironmentMapGenerationPlugin,
-            ExtractInstancesPlugin::<EnvironmentMapIds>::new(),
-        ));
-
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -305,6 +300,15 @@ impl Plugin for LightProbePlugin {
                 (upload_light_probes, prepare_environment_uniform_buffer)
                     .in_set(RenderSystems::PrepareResources),
             );
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            app.add_plugins((
+                EnvironmentMapGenerationPlugin,
+                ExtractInstancesPlugin::<EnvironmentMapIds>::new(),
+            ));
+        }))
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {

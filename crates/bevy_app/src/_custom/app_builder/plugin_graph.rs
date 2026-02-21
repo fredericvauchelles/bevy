@@ -7,10 +7,8 @@ use bevy_ecs::prelude::*;
 use bevy_platform::collections::*;
 use bevy_platform::prelude::*;
 use core::ops::{Deref, DerefMut};
-use petgraph::prelude::NodeIndex;
+use petgraph::prelude::*;
 use thiserror::Error;
-#[cfg(feature = "trace")]
-use tracing::*;
 
 /// Patch plugin dependencies
 #[derive(Clone, Debug, Eq, PartialEq, Default)]
@@ -122,7 +120,7 @@ impl From<PluginEntry> for Box<dyn Plugin> {
 pub struct PluginGraph {
     plugins: HashMap<NodeIndex, PluginEntry>,
     id2node: HashMap<PluginId, NodeIndex>,
-    graph: petgraph::Graph<PluginId, ()>,
+    graph: Graph<PluginId, ()>,
 }
 
 /// Describe how to update a plugin dependency
@@ -308,8 +306,10 @@ impl PluginGraph {
         let mut value = self.add_plugin_edges()?;
 
         let sorted = petgraph::algo::toposort(&value.graph, None).map_err(|err| {
+            let cycle = find_cycle(err.node_id(), &value.graph);
+            let cycle = cycle.into_iter().map(|n| value.plugins.get(&n).unwrap().plugin.id()).collect();
             PluginGraphBuildError::CircularDependency(
-                value.plugins.get(&err.node_id()).unwrap().plugin().id(),
+                cycle
             )
         })?
             .into_iter()
@@ -319,12 +319,63 @@ impl PluginGraph {
     }
 }
 
+fn find_cycle(node_in_cycle: NodeIndex, graph: &Graph<PluginId, ()>) -> Vec<NodeIndex> {
+    use bevy_platform::prelude::*;
+    use bevy_platform::collections::*;
+    use bevy_platform::sync::*;
+
+    struct GraphNode {
+        index: NodeIndex,
+        parent: Option<Arc<RwLock<GraphNode>>>,
+    }
+    impl GraphNode {
+        fn new(index: NodeIndex, parent: Option<Arc<RwLock<GraphNode>>>) -> Self {
+            Self {
+                index,
+                parent,
+            }
+        }
+
+        fn add_child(this: &Arc<RwLock<GraphNode>>, child: NodeIndex) -> Arc<RwLock<GraphNode>> {
+            let child = Arc::new(RwLock::new(GraphNode::new(child, Some(this.clone()))));
+            child
+        }
+    }
+
+    let root = Arc::new(RwLock::new(GraphNode::new(node_in_cycle, None)));
+    let mut to_visit = Vec::new();
+    to_visit.push(root);
+    let mut visited = HashSet::new();
+
+    while let Some(next) = to_visit.pop() {
+        let current_node = next.read().unwrap_or_else(PoisonError::into_inner).index;
+        for child in graph.edges_directed(current_node, Outgoing) {
+            if child.target() == node_in_cycle {
+                let mut nodes = vec![node_in_cycle, current_node];
+                let mut current_node = next;
+                while let Some(parent) = { current_node.read().unwrap_or_else(PoisonError::into_inner).parent.clone() } {
+                    current_node = parent;
+                    nodes.push(current_node.read().unwrap_or_else(PoisonError::into_inner).index);
+                }
+                return nodes;
+            }
+            if !visited.contains(&child.target()) {
+                visited.insert(child.target());
+                let child = GraphNode::add_child(&next, child.target());
+                to_visit.push(child);
+            }
+        }
+    }
+    vec![node_in_cycle]
+}
+
 #[derive(Debug, Error)]
 pub enum PluginGraphBuildError {
     #[error("Missing required plugin: '{0}'")]
     MissingRequiredPlugin(PluginId),
-    #[error("Circular dependency detected with plugin: '{0}'")]
-    CircularDependency(PluginId),
+    #[error("Circular dependency detected with plugin: '{}'", .0.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" -> ")
+    )]
+    CircularDependency(Vec<PluginId>),
 }
 
 impl TryFrom<PluginGraph> for PluginGroupBuilder {

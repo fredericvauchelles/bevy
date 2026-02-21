@@ -29,7 +29,7 @@ use bevy_ui::{
 use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
 
-use crate::{BoxShadowSamples, RenderUiSystems, TransparentUi, UiCameraMap};
+use crate::{BoxShadowSamples, RenderUiSystems, TransparentUi, UiCameraMap, UiRenderPlugin};
 
 use super::{stack_z_offsets, UiCameraView, QUAD_INDICES, QUAD_VERTEX_POSITIONS};
 
@@ -62,7 +62,7 @@ impl Plugin for BoxShadowPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, UiRenderPlugin).into()
     }
 }
 

@@ -225,6 +225,8 @@ impl Plugin for UiPlugin {
 
             #[cfg(feature = "bevy_picking")]
             app.add_plugins(picking_backend::UiPickingPlugin);
+
+            app.add_plugins(accessibility::AccessibilityPlugin);
         }))
     }
 }
@@ -260,8 +262,6 @@ fn build_text_interop(app: &mut App) {
                 .ambiguous_with(bevy_sprite::calculate_bounds_text2d),
         ),
     );
-
-    app.add_plugins(accessibility::AccessibilityPlugin);
 
     app.add_observer(interaction_states::on_add_disabled)
         .add_observer(interaction_states::on_remove_disabled)

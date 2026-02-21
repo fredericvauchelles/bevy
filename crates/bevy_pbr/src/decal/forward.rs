@@ -10,7 +10,7 @@ use bevy_ecs::{
     component::Component, lifecycle::HookContext, resource::Resource, world::DeferredWorld,
 };
 use bevy_math::{prelude::Rectangle, Quat, Vec2, Vec3};
-use bevy_mesh::{Mesh, Mesh3d, MeshBuilder, MeshVertexBufferLayoutRef, Meshable};
+use bevy_mesh::{Mesh, Mesh3d, MeshBuilder, MeshPlugin, MeshVertexBufferLayoutRef, Meshable};
 use bevy_reflect::{Reflect, TypePath};
 use bevy_render::{alpha::AlphaMode, render_asset::RenderAssets, render_resource::{
     AsBindGroup, AsBindGroupShaderType, CompareFunction, RenderPipelineDescriptor, ShaderType,
@@ -47,7 +47,7 @@ impl Plugin for ForwardDecalPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, MeshPlugin).into()
     }
 }
 

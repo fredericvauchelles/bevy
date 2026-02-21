@@ -64,16 +64,7 @@ impl Plugin for SpriteRenderPlugin {
 
         embedded_asset!(app, "render/sprite.wgsl");
 
-        if !app.is_plugin_added::<TextureAtlasPlugin>() {
-            app.add_plugins(TextureAtlasPlugin);
-        }
-
-        app.add_plugins((
-            Mesh2dRenderPlugin,
-            ColorMaterialPlugin,
-            TilemapChunkPlugin,
-            TilemapChunkMaterialPlugin,
-        ))
+        app
         .add_systems(
             PostUpdate,
             (
@@ -118,6 +109,21 @@ impl Plugin for SpriteRenderPlugin {
                     ),
                 );
         };
+    }
+
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        Some(Box::new(|app| {
+            if !app.contains_plugin::<TextureAtlasPlugin>() {
+                app.add_plugins(TextureAtlasPlugin);
+            }
+
+            app.add_plugins((
+                Mesh2dRenderPlugin,
+                ColorMaterialPlugin,
+                TilemapChunkPlugin,
+                TilemapChunkMaterialPlugin,
+            ));
+        }))
     }
 
     fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {

@@ -184,10 +184,11 @@ impl Plugin for PrepassPlugin {
     }
 
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
+        let debug_flags = self.debug_flags;
+        Some(Box::new(move |app| {
             app.add_plugins((
-                BinnedRenderPhasePlugin::<Opaque3dPrepass, MeshPipeline>::new(self.debug_flags),
-                BinnedRenderPhasePlugin::<AlphaMask3dPrepass, MeshPipeline>::new(self.debug_flags),
+                BinnedRenderPhasePlugin::<Opaque3dPrepass, MeshPipeline>::new(debug_flags),
+                BinnedRenderPhasePlugin::<AlphaMask3dPrepass, MeshPipeline>::new(debug_flags),
             ));
         }))
     }

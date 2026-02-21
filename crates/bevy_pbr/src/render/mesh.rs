@@ -148,16 +148,7 @@ impl Plugin for MeshRenderPlugin {
         app.add_systems(
             PostUpdate,
             (no_automatic_skin_batching, no_automatic_morph_batching),
-        )
-        .add_plugins((
-            BinnedRenderPhasePlugin::<Opaque3d, MeshPipeline>::new(self.debug_flags),
-            BinnedRenderPhasePlugin::<AlphaMask3d, MeshPipeline>::new(self.debug_flags),
-            BinnedRenderPhasePlugin::<Shadow, MeshPipeline>::new(self.debug_flags),
-            BinnedRenderPhasePlugin::<Opaque3dDeferred, MeshPipeline>::new(self.debug_flags),
-            BinnedRenderPhasePlugin::<AlphaMask3dDeferred, MeshPipeline>::new(self.debug_flags),
-            SortedRenderPhasePlugin::<Transmissive3d, MeshPipeline>::new(self.debug_flags),
-            SortedRenderPhasePlugin::<Transparent3d, MeshPipeline>::new(self.debug_flags),
-        ));
+        );
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
@@ -287,6 +278,20 @@ impl Plugin for MeshRenderPlugin {
             ShaderSettings {
                 shader_defs: mesh_bindings_shader_defs.clone(),
             });
+    }
+    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
+        let debug_flags = self.debug_flags;
+        Some(Box::new(move |app| {
+            app.add_plugins((
+                BinnedRenderPhasePlugin::<Opaque3d, MeshPipeline>::new(debug_flags),
+                BinnedRenderPhasePlugin::<AlphaMask3d, MeshPipeline>::new(debug_flags),
+                BinnedRenderPhasePlugin::<Shadow, MeshPipeline>::new(debug_flags),
+                BinnedRenderPhasePlugin::<Opaque3dDeferred, MeshPipeline>::new(debug_flags),
+                BinnedRenderPhasePlugin::<AlphaMask3dDeferred, MeshPipeline>::new(debug_flags),
+                SortedRenderPhasePlugin::<Transmissive3d, MeshPipeline>::new(debug_flags),
+                SortedRenderPhasePlugin::<Transparent3d, MeshPipeline>::new(debug_flags),
+            ));
+        }))
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {

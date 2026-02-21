@@ -51,7 +51,7 @@ use bevy_ecs::{
     system::{lifetimeless::Read, Commands, Query, Res, ResMut},
     world::World,
 };
-use bevy_image::{BevyDefault, Image, ToExtents};
+use bevy_image::{BevyDefault, Image, ImagePlugin, ToExtents};
 use bevy_math::{vec4, Vec4};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{camera::ExtractedCamera, diagnostic::RecordDiagnostics, extract_component::{ExtractComponent, ExtractComponentPlugin}, render_asset::RenderAssets, render_graph::{
@@ -369,7 +369,7 @@ impl Plugin for SmaaPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, ImagePlugin).into()
     }
 }
 

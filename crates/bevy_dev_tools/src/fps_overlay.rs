@@ -80,11 +80,11 @@ impl Plugin for FpsOverlayPlugin {
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
         Some(Box::new(|app| {
             // TODO: Use plugin dependencies, see https://github.com/bevyengine/bevy/issues/69
-            if !app.is_plugin_added::<FrameTimeDiagnosticsPlugin>() {
+            if !app.contains_plugin::<FrameTimeDiagnosticsPlugin>() {
                 app.add_plugins(FrameTimeDiagnosticsPlugin::default());
             }
 
-            if !app.is_plugin_added::<FrameTimeGraphPlugin>() {
+            if !app.contains_plugin::<FrameTimeGraphPlugin>() {
                 app.add_plugins(FrameTimeGraphPlugin);
             }
         }))

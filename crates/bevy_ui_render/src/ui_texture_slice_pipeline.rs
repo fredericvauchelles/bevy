@@ -15,7 +15,6 @@ use bevy_image::prelude::*;
 use bevy_math::{Affine2, FloatOrd, Rect, Vec2};
 use bevy_mesh::VertexBufferLayout;
 use bevy_platform::collections::HashMap;
-use bevy_render::render_asset::RenderAssetPlugin;
 use bevy_render::{render_asset::RenderAssets, render_phase::*, render_resource::{binding_types::uniform_buffer, *}, renderer::{RenderDevice, RenderQueue}, texture::GpuImage, view::*, Extract, ExtractSchedule, Render, RenderPlugin, RenderSystems};
 use bevy_render::{sync_world::MainEntity, RenderStartup};
 use bevy_shader::Shader;
@@ -55,7 +54,7 @@ impl Plugin for UiTextureSlicerPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, UiRenderPlugin).into()
     }
 }
 

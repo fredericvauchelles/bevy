@@ -43,7 +43,7 @@ use bevy_math::{
     primitives::{Cuboid, Plane3d},
     Vec2, Vec3,
 };
-use bevy_mesh::{Mesh, Meshable};
+use bevy_mesh::{Mesh, MeshPlugin, Meshable};
 use bevy_render::{render_graph::{RenderGraphExt, ViewNodeRunner}, render_resource::SpecializedRenderPipelines, sync_component::SyncComponentPlugin, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use render::{VolumetricFogNode, VolumetricFogPipeline, VolumetricFogUniformBuffer};
 
@@ -114,6 +114,6 @@ impl Plugin for VolumetricFogPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, MeshPlugin).into()
     }
 }

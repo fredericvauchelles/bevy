@@ -8,6 +8,7 @@ use bevy_asset::prelude::AssetChanged;
 use bevy_asset::{Asset, AssetEventSystems, AssetId, AssetServer, UntypedAssetId};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_camera::ScreenSpaceTransmissionQuality;
+use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::deferred::{AlphaMask3dDeferred, Opaque3dDeferred};
 use bevy_core_pipeline::prepass::{AlphaMask3dPrepass, Opaque3dPrepass};
 use bevy_core_pipeline::{
@@ -334,13 +335,14 @@ impl Plugin for MaterialsPlugin {
     }
 
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((PrepassPipelinePlugin, PrepassPlugin::new(self.debug_flags)));
+        let debug_flags = self.debug_flags;
+        Some(Box::new(move |app| {
+            app.add_plugins((PrepassPipelinePlugin, PrepassPlugin::new(debug_flags)));
         }))
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, Core3dPlugin).into()
     }
 }
 

@@ -2,7 +2,7 @@ use crate::{AlphaMode2d, Material2d, Material2dPlugin};
 use alloc::borrow::Cow;
 use bevy_app::app_builder::AppBuilder;
 use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
-use bevy_asset::{embedded_asset, embedded_path, Asset, AssetApp, AssetPath, Assets, Handle};
+use bevy_asset::{embedded_asset, embedded_path, Asset, AssetApp, AssetPath, AssetPlugin, Assets, Handle};
 use bevy_color::{Alpha, Color, ColorToComponents, LinearRgba};
 use bevy_image::Image;
 use bevy_math::{Affine2, Mat3, Vec4};
@@ -41,7 +41,7 @@ impl Plugin for ColorMaterialPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }
 

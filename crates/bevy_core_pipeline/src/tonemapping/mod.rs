@@ -5,7 +5,7 @@ use bevy_asset::{
 };
 use bevy_camera::Camera;
 use bevy_ecs::prelude::*;
-use bevy_image::{CompressedImageFormats, Image, ImageSampler, ImageType};
+use bevy_image::{CompressedImageFormats, Image, ImagePlugin, ImageSampler, ImageType};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{
     extract_component::{ExtractComponent, ExtractComponentPlugin},
@@ -107,7 +107,7 @@ impl Plugin for TonemappingPlugin {
     }
 
     fn build_after(&'_ self) -> crate::Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin, RenderPlugin).into()
+        plugin_deps!(AssetPlugin, RenderPlugin, ImagePlugin).into()
     }
 }
 

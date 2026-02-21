@@ -34,7 +34,7 @@ impl Plugin for WinitCursorPlugin {
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
         Some(Box::new(|app| {
             #[cfg(feature = "custom_cursor")]
-            if !app.is_plugin_added::<bevy_image::TextureAtlasPlugin>() {
+            if !app.contains_plugin::<bevy_image::TextureAtlasPlugin>() {
                 app.add_plugins(bevy_image::TextureAtlasPlugin);
             }
         }))

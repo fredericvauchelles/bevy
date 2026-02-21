@@ -223,7 +223,6 @@ use bevy_ecs::{
 };
 use bevy_platform::collections::HashSet;
 use bevy_reflect::{FromReflect, GetTypeRegistration, Reflect, TypePath};
-use bevy_tasks::TaskPool;
 use core::any::TypeId;
 use tracing::error;
 

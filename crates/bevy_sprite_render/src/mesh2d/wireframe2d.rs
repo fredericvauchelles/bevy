@@ -25,35 +25,19 @@ use bevy_platform::{
     hash::FixedHasher,
 };
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::view::screenshot::ScreenshotPlugin;
-use bevy_render::{
-    batching::gpu_preprocessing::GpuPreprocessingMode,
-    camera::ExtractedCamera,
-    diagnostic::RecordDiagnostics,
-    extract_resource::ExtractResource,
-    mesh::{
-        allocator::{MeshAllocator, SlabId},
-        RenderMesh,
-    },
-    prelude::*,
-    render_asset::{
-        prepare_assets, PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets,
-    },
-    render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner},
-    render_phase::{
-        AddRenderCommand, BinnedPhaseItem, BinnedRenderPhasePlugin, BinnedRenderPhaseType,
-        CachedRenderPipelinePhaseItem, DrawFunctionId, DrawFunctions, InputUniformIndex, PhaseItem,
-        PhaseItemBatchSetKey, PhaseItemExtraIndex, RenderCommand, RenderCommandResult,
-        SetItemPipeline, TrackedRenderPass, ViewBinnedRenderPhases,
-    },
-    render_resource::*,
-    renderer::RenderContext,
-    sync_world::{MainEntity, MainEntityHashMap},
-    view::{
-        ExtractedView, RenderVisibleEntities, RetainedViewEntity, ViewDepthTexture, ViewTarget,
-    },
-    Extract, Render, RenderApp, RenderDebugFlags, RenderStartup, RenderSystems,
-};
+use bevy_render::{batching::gpu_preprocessing::GpuPreprocessingMode, camera::ExtractedCamera, diagnostic::RecordDiagnostics, extract_resource::ExtractResource, mesh::{
+    allocator::{MeshAllocator, SlabId},
+    RenderMesh,
+}, prelude::*, render_asset::{
+    prepare_assets, PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets,
+}, render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner}, render_phase::{
+    AddRenderCommand, BinnedPhaseItem, BinnedRenderPhasePlugin, BinnedRenderPhaseType,
+    CachedRenderPipelinePhaseItem, DrawFunctionId, DrawFunctions, InputUniformIndex, PhaseItem,
+    PhaseItemBatchSetKey, PhaseItemExtraIndex, RenderCommand, RenderCommandResult,
+    SetItemPipeline, TrackedRenderPass, ViewBinnedRenderPhases,
+}, render_resource::*, renderer::RenderContext, sync_world::{MainEntity, MainEntityHashMap}, view::{
+    ExtractedView, RenderVisibleEntities, RetainedViewEntity, ViewDepthTexture, ViewTarget,
+}, Extract, Render, RenderApp, RenderDebugFlags, RenderPlugin, RenderStartup, RenderSystems};
 use bevy_shader::Shader;
 use core::{hash::Hash, ops::Range};
 use tracing::error;
@@ -154,9 +138,10 @@ impl Plugin for Wireframe2dPlugin {
     }
 
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
+        let debug_flags = self.debug_flags;
+        Some(Box::new(move |app| {
             app.add_plugins((
-                BinnedRenderPhasePlugin::<Wireframe2dPhaseItem, Mesh2dPipeline>::new(self.debug_flags),
+                BinnedRenderPhasePlugin::<Wireframe2dPhaseItem, Mesh2dPipeline>::new(debug_flags),
                 RenderAssetPlugin::<RenderWireframeMaterial>::default(),
             ));
         }))

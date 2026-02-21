@@ -4,13 +4,14 @@ mod upsampling_pipeline;
 
 use bevy_image::ToExtents;
 pub use settings::{Bloom, BloomCompositeMode, BloomPrefilter};
+use std::borrow::Cow;
 
 use crate::bloom::{
     downsampling_pipeline::init_bloom_downsampling_pipeline,
     upsampling_pipeline::init_bloom_upscaling_pipeline,
 };
 use bevy_app::app_builder::AppBuilder;
-use bevy_app::{App, Plugin};
+use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
 use bevy_asset::embedded_asset;
 use bevy_color::{Gray, LinearRgba};
 use bevy_core_pipeline::{
@@ -19,19 +20,9 @@ use bevy_core_pipeline::{
 };
 use bevy_ecs::{prelude::*, query::QueryItem};
 use bevy_math::{ops, UVec2};
-use bevy_render::{
-    camera::ExtractedCamera,
-    diagnostic::RecordDiagnostics,
-    extract_component::{
-        ComponentUniforms, DynamicUniformIndex, ExtractComponentPlugin, UniformComponentPlugin,
-    },
-    render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner},
-    render_resource::*,
-    renderer::{RenderContext, RenderDevice},
-    texture::{CachedTexture, TextureCache},
-    view::ViewTarget,
-    Render, RenderApp, RenderStartup, RenderSystems,
-};
+use bevy_render::{camera::ExtractedCamera, diagnostic::RecordDiagnostics, extract_component::{
+    ComponentUniforms, DynamicUniformIndex, ExtractComponentPlugin, UniformComponentPlugin,
+}, render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner}, render_resource::*, renderer::{RenderContext, RenderDevice}, texture::{CachedTexture, TextureCache}, view::ViewTarget, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
 use downsampling_pipeline::{
     prepare_downsampling_pipeline, BloomDownsamplingPipeline, BloomDownsamplingPipelineIds,
     BloomUniforms,
@@ -102,6 +93,10 @@ impl Plugin for BloomPlugin {
                 UniformComponentPlugin::<BloomUniforms>::default(),
             ));
         }))
+    }
+
+    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
+        plugin_deps!(RenderPlugin).into()
     }
 }
 

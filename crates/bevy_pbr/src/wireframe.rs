@@ -149,9 +149,10 @@ impl Plugin for WireframePlugin {
     }
 
     fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
+        let debug_flags = self.debug_flags;
+        Some(Box::new(move |app| {
             app.add_plugins((
-                BinnedRenderPhasePlugin::<Wireframe3d, MeshPipeline>::new(self.debug_flags),
+                BinnedRenderPhasePlugin::<Wireframe3d, MeshPipeline>::new(debug_flags),
                 RenderAssetPlugin::<RenderWireframeMaterial>::default(),
             ));
         }))

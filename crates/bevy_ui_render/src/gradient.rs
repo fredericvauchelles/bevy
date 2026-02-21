@@ -65,7 +65,7 @@ impl Plugin for GradientPlugin {
     }
 
     fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
+        plugin_deps!(RenderPlugin, UiRenderPlugin).into()
     }
 }
 
