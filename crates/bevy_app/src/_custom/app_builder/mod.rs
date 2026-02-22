@@ -1,7 +1,7 @@
 //! App builder is used to build an app with the appropriate plugin order
 
 use crate::*;
-pub use bevy_app::app_builder::plugin_graph::{PluginDependencyPatch, UpdatePluginDependency};
+pub use bevy_app::app_builder::plugin_graph::UpdatePluginDependency;
 use bevy_ecs::error::*;
 use bevy_ecs::prelude::BevyError;
 use bevy_platform::prelude::*;
@@ -12,10 +12,12 @@ mod plugin_graph;
 
 /// Prelude for [`AppBuilder`]
 pub mod prelude {
-    pub use super::{AppBuilder, PluginDependencyPatch, UpdatePluginDependency};
+    pub use super::{AppBuilder, UpdatePluginDependency};
+    pub use crate::_custom::app_builder::plugin_graph::PluginDependencyPatch;
 }
 
 pub use plugin_graph::GetPluginError;
+pub use plugin_graph::PluginDependencyPatch;
 
 /// App builder is used to build an app with the appropriate plugin order
 pub struct AppBuilder {
@@ -27,6 +29,19 @@ impl AppBuilder {
     /// If a plugin with the same [`PluginId`] is already added, then it will be overwritten.
     pub fn add_plugins<M>(&mut self, plugins: impl Plugins<M>) -> &mut Self {
         self.plugin_graph.add_plugins(plugins);
+        self
+    }
+
+    /// Add plugins to the graph as a single node with id `alias`
+    ///
+    /// If a plugin with the same [`PluginId`] is already added, then it will be overwritten.
+    ///
+    /// Plugins will be built in provided order
+    ///
+    /// You can use it for existing plugin group that do not use the dependency system
+    /// but are in a manually defined order
+    pub fn add_plugins_as_alias<M>(&mut self, alias: PluginId, plugins: impl Plugins<M>) -> &mut Self {
+        self.plugin_graph.add_plugins_as_alias(alias, plugins);
         self
     }
 
