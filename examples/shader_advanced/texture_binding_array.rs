@@ -17,8 +17,6 @@ use bevy::{
     },
     shader::ShaderRef,
 };
-use bevy_render::RenderPlugin;
-use std::borrow::Cow;
 use std::{num::NonZero, process::exit};
 
 /// This example uses a shader source file from the assets subdirectory
@@ -49,10 +47,6 @@ impl Plugin for GpuFeatureSupportChecker {
         };
 
         render_app.add_systems(RenderStartup, verify_required_features);
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

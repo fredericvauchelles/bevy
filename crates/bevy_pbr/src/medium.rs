@@ -1,8 +1,7 @@
 use alloc::{borrow::Cow, sync::Arc};
 use core::f32::{self, consts::PI};
 
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{Asset, AssetApp, AssetId};
 use bevy_ecs::{
     resource::Resource,
@@ -10,11 +9,16 @@ use bevy_ecs::{
 };
 use bevy_math::{ops, Curve, FloatPow, Vec3, Vec4};
 use bevy_reflect::TypePath;
-use bevy_render::{render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin}, render_resource::{
-    Extent3d, FilterMode, Sampler, SamplerDescriptor, Texture, TextureDataOrder,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
-    TextureViewDescriptor,
-}, renderer::{RenderDevice, RenderQueue}, RenderApp, RenderPlugin, RenderStartup};
+use bevy_render::{
+    render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin},
+    render_resource::{
+        Extent3d, FilterMode, Sampler, SamplerDescriptor, Texture, TextureDataOrder,
+        TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+        TextureViewDescriptor,
+    },
+    renderer::{RenderDevice, RenderQueue},
+    RenderApp, RenderStartup,
+};
 use smallvec::SmallVec;
 
 #[doc(hidden)]
@@ -22,21 +26,12 @@ pub struct ScatteringMediumPlugin;
 
 impl Plugin for ScatteringMediumPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset::<ScatteringMedium>();
+        app.init_asset::<ScatteringMedium>()
+            .add_plugins(RenderAssetPlugin::<GpuScatteringMedium>::default());
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.add_systems(RenderStartup, init_scattering_medium_sampler);
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(RenderAssetPlugin::<GpuScatteringMedium>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
     }
 }
 

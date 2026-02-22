@@ -5,7 +5,6 @@ mod custom_cursor;
 pub use custom_cursor::*;
 
 use crate::{converters::convert_system_cursor_icon, state::WinitAppRunnerState, WINIT_WINDOWS};
-use bevy_app::app_builder::AppBuilder;
 use bevy_app::{App, Last, Plugin};
 #[cfg(feature = "custom_cursor")]
 use bevy_asset::Assets;
@@ -25,19 +24,16 @@ pub(crate) struct WinitCursorPlugin;
 impl Plugin for WinitCursorPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "custom_cursor")]
-        app.init_resource::<WinitCustomCursorCache>();
+        {
+            if !app.is_plugin_added::<bevy_image::TextureAtlasPlugin>() {
+                app.add_plugins(bevy_image::TextureAtlasPlugin);
+            }
+
+            app.init_resource::<WinitCustomCursorCache>();
+        }
 
         app.add_systems(Last, update_cursors)
             .add_observer(on_remove_cursor_icon);
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            #[cfg(feature = "custom_cursor")]
-            if !app.contains_plugin::<bevy_image::TextureAtlasPlugin>() {
-                app.add_plugins(bevy_image::TextureAtlasPlugin);
-            }
-        }))
     }
 }
 

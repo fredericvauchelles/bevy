@@ -3,8 +3,7 @@ mod node;
 mod prepare;
 
 use crate::SolariPlugins;
-use alloc::borrow::Cow;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::embedded_asset;
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
@@ -16,7 +15,12 @@ use bevy_core_pipeline::{
 use bevy_ecs::{component::Component, reflect::ReflectComponent, schedule::IntoScheduleConfigs};
 use bevy_pbr::DefaultOpaqueRendererMethod;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{render_graph::{RenderGraphExt, ViewNodeRunner}, renderer::RenderDevice, view::Hdr, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems};
+use bevy_render::{
+    render_graph::{RenderGraphExt, ViewNodeRunner},
+    renderer::RenderDevice,
+    view::Hdr,
+    ExtractSchedule, Render, RenderApp, RenderSystems,
+};
 use bevy_shader::load_shader_library;
 use extract::extract_solari_lighting;
 use node::SolariLightingNode;
@@ -77,10 +81,6 @@ impl Plugin for SolariLightingPlugin {
                     Node3d::EndMainPass,
                 ),
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -5,7 +5,6 @@ mod texture_attachment;
 mod texture_cache;
 
 pub use crate::render_resource::DefaultImageSampler;
-use alloc::borrow::Cow;
 use bevy_image::{CompressedImageFormatSupport, CompressedImageFormats, ImageLoader, ImagePlugin};
 pub use fallback_image::*;
 pub use gpu_image::*;
@@ -17,11 +16,9 @@ use crate::{
     extract_resource::ExtractResourcePlugin, render_asset::RenderAssetPlugin,
     renderer::RenderDevice, Render, RenderApp, RenderSystems,
 };
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::AssetApp;
 use bevy_ecs::prelude::*;
-use bevy_render::RenderPlugin;
 use tracing::warn;
 
 #[derive(Default)]
@@ -29,7 +26,10 @@ pub struct TexturePlugin;
 
 impl Plugin for TexturePlugin {
     fn build(&self, app: &mut App) {
-        app
+        app.add_plugins((
+            RenderAssetPlugin::<GpuImage>::default(),
+            ExtractResourcePlugin::<ManualTextureViews>::default(),
+        ))
         .init_resource::<ManualTextureViews>();
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.init_resource::<TextureCache>().add_systems(
@@ -69,18 +69,5 @@ impl Plugin for TexturePlugin {
                 .init_resource::<FallbackImageCubemap>()
                 .init_resource::<FallbackImageFormatMsaaCache>();
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                RenderAssetPlugin::<GpuImage>::default(),
-                ExtractResourcePlugin::<ManualTextureViews>::default(),
-            ));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }

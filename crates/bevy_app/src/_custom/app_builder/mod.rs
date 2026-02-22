@@ -7,6 +7,7 @@ use bevy_ecs::prelude::BevyError;
 use bevy_platform::prelude::*;
 use core::borrow::Borrow;
 use plugin_graph::PluginGraph;
+use std::ops::Deref;
 
 mod plugin_graph;
 
@@ -174,8 +175,9 @@ impl AppBuilder {
             let pre_builds = self
                 .plugin_graph
                 .iter_plugins()
-                .filter(|p| !pre_built_plugins.contains(&p.plugin().id()))
-                .flat_map(|p| p.plugin().pre_build().into_iter().map(|pre_build| (p.plugin().id(), pre_build)))
+                .flat_map(|p| p.plugins())
+                .filter(|p| !pre_built_plugins.contains(&p.deref().id()))
+                .flat_map(|p| p.deref().pre_build().into_iter().map(|pre_build| (p.deref().id(), pre_build)))
                 .collect::<Vec<_>>();
 
             if pre_builds.is_empty() {
@@ -230,7 +232,7 @@ mod tests {
         app.add_plugins(PluginA);
 
         let pre_built = app.pre_build_recursive();
-        let plugin_ids = app.plugin_graph.iter_plugins().map(|entry| entry.plugin().id()).collect::<HashSet<_>>();
+        let plugin_ids = app.plugin_graph.iter_plugins().flat_map(|p| p.plugins()).map(|entry| entry.deref().id()).collect::<HashSet<_>>();
 
         assert_eq!(pre_built, vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>()].into_iter().collect());
         assert!(plugin_ids.is_superset(&vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()].into_iter().collect()));

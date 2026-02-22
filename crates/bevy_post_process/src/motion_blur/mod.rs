@@ -2,9 +2,7 @@
 //!
 //! Add the [`MotionBlur`] component to a camera to enable motion blur.
 
-use crate::bloom::BloomPlugin;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::embedded_asset;
 use bevy_camera::Camera;
 use bevy_core_pipeline::{
@@ -18,8 +16,12 @@ use bevy_ecs::{
     schedule::IntoScheduleConfigs,
 };
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin}, render_graph::{RenderGraphExt, ViewNodeRunner}, render_resource::{ShaderType, SpecializedRenderPipelines}, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
-use std::borrow::Cow;
+use bevy_render::{
+    extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin},
+    render_graph::{RenderGraphExt, ViewNodeRunner},
+    render_resource::{ShaderType, SpecializedRenderPipelines},
+    Render, RenderApp, RenderStartup, RenderSystems,
+};
 
 pub mod node;
 pub mod pipeline;
@@ -132,6 +134,11 @@ impl Plugin for MotionBlurPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "motion_blur.wgsl");
 
+        app.add_plugins((
+            ExtractComponentPlugin::<MotionBlur>::default(),
+            UniformComponentPlugin::<MotionBlurUniform>::default(),
+        ));
+
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -157,18 +164,5 @@ impl Plugin for MotionBlurPlugin {
                     Node3d::Bloom, // we want blurred areas to bloom and tonemap properly.
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                ExtractComponentPlugin::<MotionBlur>::default(),
-                UniformComponentPlugin::<MotionBlurUniform>::default(),
-            ));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, BloomPlugin).into()
     }
 }

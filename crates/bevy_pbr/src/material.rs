@@ -2,13 +2,11 @@ use crate::material_bind_groups::{
     FallbackBindlessResources, MaterialBindGroupAllocator, MaterialBindingId,
 };
 use crate::*;
-use alloc::borrow::Cow;
 use alloc::sync::Arc;
 use bevy_asset::prelude::AssetChanged;
 use bevy_asset::{Asset, AssetEventSystems, AssetId, AssetServer, UntypedAssetId};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_camera::ScreenSpaceTransmissionQuality;
-use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::deferred::{AlphaMask3dDeferred, Opaque3dDeferred};
 use bevy_core_pipeline::prepass::{AlphaMask3dPrepass, Opaque3dPrepass};
 use bevy_core_pipeline::{
@@ -42,6 +40,7 @@ use bevy_render::erased_render_asset::{
 };
 use bevy_render::render_asset::{prepare_assets, RenderAssets};
 use bevy_render::renderer::RenderQueue;
+use bevy_render::RenderStartup;
 use bevy_render::{
     batching::gpu_preprocessing::GpuPreprocessingSupport,
     extract_resource::ExtractResource,
@@ -56,7 +55,6 @@ use bevy_render::{
 };
 use bevy_render::{mesh::allocator::MeshAllocator, sync_world::MainEntityHashMap};
 use bevy_render::{texture::FallbackImage, view::RenderVisibleEntities};
-use bevy_render::{RenderPlugin, RenderStartup};
 use bevy_shader::{Shader, ShaderDefVal};
 use bevy_utils::Parallel;
 use core::any::{Any, TypeId};
@@ -282,6 +280,7 @@ pub struct MaterialsPlugin {
 
 impl Plugin for MaterialsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins((PrepassPipelinePlugin, PrepassPlugin::new(self.debug_flags)));
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
                 .init_resource::<EntitySpecializationTicks>()
@@ -333,17 +332,6 @@ impl Plugin for MaterialsPlugin {
                 );
         }
     }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        let debug_flags = self.debug_flags;
-        Some(Box::new(move |app| {
-            app.add_plugins((PrepassPipelinePlugin, PrepassPlugin::new(debug_flags)));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, Core3dPlugin).into()
-    }
 }
 
 /// Adds the necessary ECS resources and render logic to enable rendering entities using the given [`Material`]
@@ -371,6 +359,7 @@ where
         app.init_asset::<M>()
             .register_type::<MeshMaterial3d<M>>()
             .init_resource::<EntitiesNeedingSpecialization<M>>()
+            .add_plugins((ErasedRenderAssetPlugin::<MeshMaterial3d<M>>::default(),))
             .add_systems(
                 PostUpdate,
                 (
@@ -411,16 +400,6 @@ where
                     ),
                 );
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((ErasedRenderAssetPlugin::<MeshMaterial3d<M>>::default(),));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

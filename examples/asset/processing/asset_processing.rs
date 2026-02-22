@@ -13,7 +13,6 @@ use bevy::{
     reflect::TypePath,
 };
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::convert::Infallible;
 use thiserror::Error;
 
@@ -64,10 +63,6 @@ impl Plugin for TextPlugin {
                 LoadTransformAndSave::new(CoolTextTransformer, CoolTextSaver),
             )
             .set_default_asset_processor::<LoadTransformAndSave<CoolTextLoader, CoolTextTransformer, CoolTextSaver>>("cool.ron");
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
     }
 }
 

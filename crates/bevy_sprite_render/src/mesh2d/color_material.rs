@@ -1,15 +1,11 @@
 use crate::{AlphaMode2d, Material2d, Material2dPlugin};
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
-use bevy_asset::{embedded_asset, embedded_path, Asset, AssetApp, AssetPath, AssetPlugin, Assets, Handle};
+use bevy_app::{App, Plugin};
+use bevy_asset::{embedded_asset, embedded_path, Asset, AssetApp, AssetPath, Assets, Handle};
 use bevy_color::{Alpha, Color, ColorToComponents, LinearRgba};
 use bevy_image::Image;
 use bevy_math::{Affine2, Mat3, Vec4};
 use bevy_reflect::prelude::*;
-use bevy_render::{
-    render_asset::RenderAssets, render_resource::*, texture::GpuImage, RenderPlugin,
-};
+use bevy_render::{render_asset::RenderAssets, render_resource::*, texture::GpuImage};
 use bevy_shader::ShaderRef;
 
 #[derive(Default)]
@@ -19,8 +15,8 @@ impl Plugin for ColorMaterialPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "color_material.wgsl");
 
-        app.init_asset::<ColorMaterial>();
-        app.register_asset_reflect::<ColorMaterial>();
+        app.add_plugins(Material2dPlugin::<ColorMaterial>::default())
+            .register_asset_reflect::<ColorMaterial>();
 
         // Initialize the default material handle.
         app.world_mut()
@@ -33,16 +29,6 @@ impl Plugin for ColorMaterialPlugin {
                 },
             )
             .unwrap();
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(Material2dPlugin::<ColorMaterial>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }
 

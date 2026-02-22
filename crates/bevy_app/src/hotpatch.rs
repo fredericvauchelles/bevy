@@ -2,6 +2,7 @@
 extern crate alloc;
 
 use alloc::sync::Arc;
+
 #[cfg(feature = "reflect_auto_register")]
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::{
@@ -12,8 +13,9 @@ use bevy_ecs::{
 use dioxus_devtools::connect_subsecond;
 use dioxus_devtools::subsecond;
 
-use crate::{Last, Plugin};
 pub use dioxus_devtools::subsecond::{call, HotFunction};
+
+use crate::{Last, Plugin};
 
 /// Plugin connecting to Dioxus CLI to enable hot patching.
 #[derive(Default)]

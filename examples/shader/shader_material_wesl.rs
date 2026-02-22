@@ -10,8 +10,6 @@ use bevy::{
     },
     shader::{ShaderDefVal, ShaderRef},
 };
-use bevy_render::RenderPlugin;
-use std::borrow::Cow;
 
 /// This example uses shader source files from the assets subdirectory
 const FRAGMENT_SHADER_ASSET_PATH: &str = "shaders/custom_material.wesl";
@@ -46,10 +44,6 @@ impl Plugin for CustomMaterialPlugin {
             .resource_mut::<AssetServer>()
             .load::<Shader>("shaders/util.wesl");
         app.insert_resource(UtilityShader(handle));
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

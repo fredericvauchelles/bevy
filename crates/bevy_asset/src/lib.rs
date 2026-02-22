@@ -146,9 +146,11 @@
 )]
 #![no_std]
 
-extern crate alloc; // Required to make proc macros work in bevy itself.
-extern crate self as bevy_asset;
+extern crate alloc;
 extern crate std;
+
+// Required to make proc macros work in bevy itself.
+extern crate self as bevy_asset;
 
 pub mod io;
 pub mod meta;
@@ -208,13 +210,12 @@ use crate::{
     io::{embedded::EmbeddedAssetRegistry, AssetSourceBuilder, AssetSourceBuilders, AssetSourceId},
     processor::{AssetProcessor, Process},
 };
-use alloc::borrow::Cow;
 use alloc::{
     string::{String, ToString},
     sync::Arc,
     vec::Vec,
 };
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PostUpdate, PreUpdate, TaskPoolPlugin};
+use bevy_app::{App, Plugin, PostUpdate, PreUpdate};
 use bevy_ecs::{prelude::Component, schedule::common_conditions::resource_exists};
 use bevy_ecs::{
     reflect::AppTypeRegistry,
@@ -437,10 +438,6 @@ impl Plugin for AssetPlugin {
                     .chain(),
             )
             .register_diagnostic(Diagnostic::new(AssetServer::STARTED_LOAD_COUNT));
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(TaskPoolPlugin).into()
     }
 }
 

@@ -3,9 +3,7 @@ use crate::{
     RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup, SetMeshViewBindingArrayBindGroup,
     ViewKeyCache, ViewSpecializationTicks,
 };
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PostUpdate, Startup, Update};
+use bevy_app::{App, Plugin, PostUpdate, Startup, Update};
 use bevy_asset::{
     embedded_asset, load_embedded_asset, prelude::AssetChanged, AsAssetId, Asset, AssetApp,
     AssetEventSystems, AssetId, AssetServer, Assets, Handle, UntypedAssetId,
@@ -26,20 +24,35 @@ use bevy_platform::{
     hash::FixedHasher,
 };
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{batching::gpu_preprocessing::{GpuPreprocessingMode, GpuPreprocessingSupport}, camera::{extract_cameras, ExtractedCamera}, diagnostic::RecordDiagnostics, extract_resource::ExtractResource, mesh::{
-    allocator::{MeshAllocator, SlabId},
-    RenderMesh,
-}, prelude::*, render_asset::{
-    prepare_assets, PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets,
-}, render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner}, render_phase::{
-    AddRenderCommand, BinnedPhaseItem, BinnedRenderPhasePlugin, BinnedRenderPhaseType,
-    CachedRenderPipelinePhaseItem, DrawFunctionId, DrawFunctions, PhaseItem,
-    PhaseItemBatchSetKey, PhaseItemExtraIndex, RenderCommand, RenderCommandResult,
-    SetItemPipeline, TrackedRenderPass, ViewBinnedRenderPhases,
-}, render_resource::*, renderer::{RenderContext, RenderDevice}, sync_world::{MainEntity, MainEntityHashMap}, view::{
-    ExtractedView, NoIndirectDrawing, RenderVisibilityRanges, RenderVisibleEntities,
-    RetainedViewEntity, ViewDepthTexture, ViewTarget,
-}, Extract, Render, RenderApp, RenderDebugFlags, RenderPlugin, RenderStartup, RenderSystems};
+use bevy_render::{
+    batching::gpu_preprocessing::{GpuPreprocessingMode, GpuPreprocessingSupport},
+    camera::{extract_cameras, ExtractedCamera},
+    diagnostic::RecordDiagnostics,
+    extract_resource::ExtractResource,
+    mesh::{
+        allocator::{MeshAllocator, SlabId},
+        RenderMesh,
+    },
+    prelude::*,
+    render_asset::{
+        prepare_assets, PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets,
+    },
+    render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner},
+    render_phase::{
+        AddRenderCommand, BinnedPhaseItem, BinnedRenderPhasePlugin, BinnedRenderPhaseType,
+        CachedRenderPipelinePhaseItem, DrawFunctionId, DrawFunctions, PhaseItem,
+        PhaseItemBatchSetKey, PhaseItemExtraIndex, RenderCommand, RenderCommandResult,
+        SetItemPipeline, TrackedRenderPass, ViewBinnedRenderPhases,
+    },
+    render_resource::*,
+    renderer::{RenderContext, RenderDevice},
+    sync_world::{MainEntity, MainEntityHashMap},
+    view::{
+        ExtractedView, NoIndirectDrawing, RenderVisibilityRanges, RenderVisibleEntities,
+        RetainedViewEntity, ViewDepthTexture, ViewTarget,
+    },
+    Extract, Render, RenderApp, RenderDebugFlags, RenderStartup, RenderSystems,
+};
 use bevy_shader::Shader;
 use core::{hash::Hash, ops::Range};
 use tracing::{error, warn};
@@ -70,7 +83,10 @@ impl Plugin for WireframePlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "render/wireframe.wgsl");
 
-        app
+        app.add_plugins((
+            BinnedRenderPhasePlugin::<Wireframe3d, MeshPipeline>::new(self.debug_flags),
+            RenderAssetPlugin::<RenderWireframeMaterial>::default(),
+        ))
         .init_asset::<WireframeMaterial>()
         .init_resource::<SpecializedMeshPipelines<Wireframe3dPipeline>>()
         .init_resource::<WireframeConfig>()
@@ -146,20 +162,6 @@ impl Plugin for WireframePlugin {
                         .after(prepare_assets::<RenderWireframeMaterial>),
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        let debug_flags = self.debug_flags;
-        Some(Box::new(move |app| {
-            app.add_plugins((
-                BinnedRenderPhasePlugin::<Wireframe3d, MeshPipeline>::new(debug_flags),
-                RenderAssetPlugin::<RenderWireframeMaterial>::default(),
-            ));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

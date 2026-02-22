@@ -102,14 +102,6 @@ impl Plugin for AudioPlugin {
 
         app.add_audio_source::<Pitch>();
     }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        use bevy_app::plugin_deps;
-        plugin_deps!(
-            #[cfg(any(feature = "mp3", feature = "flac", feature = "wav", feature = "vorbis"))]
-            bevy_asset::AssetPlugin
-        ).into()
-    }
 }
 
 impl AddAudioSource for App {

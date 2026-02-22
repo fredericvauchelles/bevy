@@ -5,6 +5,14 @@
 //! cubes. The demo displays the number of cubes that were actually rendered, so
 //! the effects of occlusion culling can be seen.
 
+use std::{
+    any::TypeId,
+    f32::consts::PI,
+    fmt::Write as _,
+    result::Result,
+    sync::{Arc, Mutex},
+};
+
 use bevy::{
     color::palettes::css::{SILVER, WHITE},
     core_pipeline::{
@@ -29,14 +37,6 @@ use bevy::{
     },
 };
 use bytemuck::Pod;
-use std::borrow::Cow;
-use std::{
-    any::TypeId,
-    f32::consts::PI,
-    fmt::Write as _,
-    result::Result,
-    sync::{Arc, Mutex},
-};
 
 /// The radius of the spinning sphere of cubes.
 const OUTER_RADIUS: f32 = 3.0;
@@ -260,10 +260,6 @@ impl Plugin for ReadbackIndirectParametersPlugin {
                     Node3d::EndMainPassPostProcessing,
                 ),
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
     }
 }
 

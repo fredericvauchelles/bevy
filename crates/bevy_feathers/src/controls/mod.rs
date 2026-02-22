@@ -1,6 +1,4 @@
 //! Meta-module containing all feathers controls (widgets that are interactive).
-
-use bevy_app::app_builder::AppBuilder;
 use bevy_app::Plugin;
 
 mod button;
@@ -34,20 +32,17 @@ use crate::{
 pub struct ControlsPlugin;
 
 impl Plugin for ControlsPlugin {
-    fn build(&self, _: &mut bevy_app::App) {}
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                AlphaPatternPlugin,
-                ButtonPlugin,
-                CheckboxPlugin,
-                ColorPlanePlugin,
-                ColorSliderPlugin,
-                ColorSwatchPlugin,
-                RadioPlugin,
-                SliderPlugin,
-                ToggleSwitchPlugin,
-            ));
-        }))
+    fn build(&self, app: &mut bevy_app::App) {
+        app.add_plugins((
+            AlphaPatternPlugin,
+            ButtonPlugin,
+            CheckboxPlugin,
+            ColorPlanePlugin,
+            ColorSliderPlugin,
+            ColorSwatchPlugin,
+            RadioPlugin,
+            SliderPlugin,
+            ToggleSwitchPlugin,
+        ));
     }
 }

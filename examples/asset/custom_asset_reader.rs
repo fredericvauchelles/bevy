@@ -9,7 +9,6 @@ use bevy::{
     },
     prelude::*,
 };
-use std::borrow::Cow;
 use std::path::Path;
 
 /// A custom asset reader implementation that wraps a given asset reader implementation
@@ -50,10 +49,6 @@ impl Plugin for CustomAssetReaderPlugin {
                 ))
             }),
         );
-    }
-
-    fn build_before(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
     }
 }
 

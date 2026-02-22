@@ -1,11 +1,18 @@
-use crate::{extract_component::ExtractComponentPlugin, render_asset::RenderAssets, render_resource::{
-    Buffer, BufferUsages, CommandEncoder, Extent3d, TexelCopyBufferLayout, Texture,
-    TextureFormat,
-}, renderer::{render_system, RenderDevice}, storage::{GpuShaderStorageBuffer, ShaderStorageBuffer}, sync_world::MainEntity, texture::GpuImage, ExtractSchedule, MainWorld, Render, RenderApp, RenderPlugin, RenderSystems};
-use alloc::borrow::Cow;
+use crate::{
+    extract_component::ExtractComponentPlugin,
+    render_asset::RenderAssets,
+    render_resource::{
+        Buffer, BufferUsages, CommandEncoder, Extent3d, TexelCopyBufferLayout, Texture,
+        TextureFormat,
+    },
+    renderer::{render_system, RenderDevice},
+    storage::{GpuShaderStorageBuffer, ShaderStorageBuffer},
+    sync_world::MainEntity,
+    texture::GpuImage,
+    ExtractSchedule, MainWorld, Render, RenderApp, RenderSystems,
+};
 use async_channel::{Receiver, Sender};
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::Handle;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::schedule::IntoScheduleConfigs;
@@ -42,6 +49,8 @@ impl Default for GpuReadbackPlugin {
 
 impl Plugin for GpuReadbackPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(ExtractComponentPlugin::<Readback>::default());
+
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
                 .init_resource::<GpuReadbackBufferPool>()
@@ -58,16 +67,6 @@ impl Plugin for GpuReadbackPlugin {
                     ),
                 );
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ExtractComponentPlugin::<Readback>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

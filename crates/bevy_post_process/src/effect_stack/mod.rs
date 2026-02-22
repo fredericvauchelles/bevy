@@ -2,8 +2,7 @@
 //!
 //! Currently, this consists only of chromatic aberration.
 
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{
     embedded_asset, load_embedded_asset, AssetServer, Assets, Handle, RenderAssetUsages,
 };
@@ -19,25 +18,32 @@ use bevy_ecs::{
     system::{lifetimeless::Read, Commands, Query, Res, ResMut},
     world::World,
 };
-use bevy_image::{BevyDefault, Image, ImagePlugin};
+use bevy_image::{BevyDefault, Image};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{diagnostic::RecordDiagnostics, extract_component::{ExtractComponent, ExtractComponentPlugin}, render_asset::RenderAssets, render_graph::{
-    NodeRunError, RenderGraphContext, RenderGraphExt as _, ViewNode, ViewNodeRunner,
-}, render_resource::{
-    binding_types::{sampler, texture_2d, uniform_buffer},
-    BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
-    CachedRenderPipelineId, ColorTargetState, ColorWrites, DynamicUniformBuffer, Extent3d,
-    FilterMode, FragmentState, Operations, PipelineCache, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipelineDescriptor, Sampler, SamplerBindingType,
-    SamplerDescriptor, ShaderStages, ShaderType, SpecializedRenderPipeline,
-    SpecializedRenderPipelines, TextureDimension, TextureFormat, TextureSampleType,
-}, renderer::{RenderContext, RenderDevice, RenderQueue}, texture::GpuImage, view::{ExtractedView, ViewTarget}, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
+use bevy_render::{
+    diagnostic::RecordDiagnostics,
+    extract_component::{ExtractComponent, ExtractComponentPlugin},
+    render_asset::RenderAssets,
+    render_graph::{
+        NodeRunError, RenderGraphContext, RenderGraphExt as _, ViewNode, ViewNodeRunner,
+    },
+    render_resource::{
+        binding_types::{sampler, texture_2d, uniform_buffer},
+        BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
+        CachedRenderPipelineId, ColorTargetState, ColorWrites, DynamicUniformBuffer, Extent3d,
+        FilterMode, FragmentState, Operations, PipelineCache, RenderPassColorAttachment,
+        RenderPassDescriptor, RenderPipelineDescriptor, Sampler, SamplerBindingType,
+        SamplerDescriptor, ShaderStages, ShaderType, SpecializedRenderPipeline,
+        SpecializedRenderPipelines, TextureDimension, TextureFormat, TextureSampleType,
+    },
+    renderer::{RenderContext, RenderDevice, RenderQueue},
+    texture::GpuImage,
+    view::{ExtractedView, ViewTarget},
+    Render, RenderApp, RenderStartup, RenderSystems,
+};
 use bevy_shader::{load_shader_library, Shader};
 use bevy_utils::prelude::default;
-use std::borrow::Cow;
 
-use crate::bloom::BloomPlugin;
-use crate::dof::DepthOfFieldPlugin;
 use bevy_core_pipeline::{
     core_2d::graph::{Core2d, Node2d},
     core_3d::graph::{Core3d, Node3d},
@@ -198,6 +204,8 @@ impl Plugin for EffectStackPlugin {
             RenderAssetUsages::RENDER_WORLD,
         ));
 
+        app.add_plugins(ExtractComponentPlugin::<ChromaticAberration>::default());
+
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -235,16 +243,6 @@ impl Plugin for EffectStackPlugin {
                 Core2d,
                 (Node2d::Bloom, Node2d::PostProcessing, Node2d::Tonemapping),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ExtractComponentPlugin::<ChromaticAberration>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, ImagePlugin, BloomPlugin, DepthOfFieldPlugin).into()
     }
 }
 

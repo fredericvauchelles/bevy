@@ -4,10 +4,9 @@
 //! This is essentially the same as the `extract_component` module, but
 //! higher-performance because it avoids the ECS overhead.
 
-use alloc::borrow::Cow;
 use core::marker::PhantomData;
 
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_camera::visibility::ViewVisibility;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -18,7 +17,7 @@ use bevy_ecs::{
 };
 
 use crate::sync_world::MainEntityHashMap;
-use crate::{Extract, ExtractSchedule, RenderApp, RenderPlugin};
+use crate::{Extract, ExtractSchedule, RenderApp};
 
 /// Describes how to extract data needed for rendering from a component or
 /// components.
@@ -104,10 +103,6 @@ where
                 render_app.add_systems(ExtractSchedule, extract_all::<EI>);
             }
         }
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

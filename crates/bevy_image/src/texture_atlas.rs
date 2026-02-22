@@ -1,6 +1,5 @@
-use alloc::borrow::Cow;
 use bevy_app::prelude::*;
-use bevy_asset::{Asset, AssetApp as _, AssetId, AssetPlugin, Assets, Handle};
+use bevy_asset::{Asset, AssetApp as _, AssetId, Assets, Handle};
 use bevy_math::{Rect, URect, UVec2};
 use bevy_platform::collections::HashMap;
 #[cfg(not(feature = "bevy_reflect"))]
@@ -21,10 +20,6 @@ impl Plugin for TextureAtlasPlugin {
 
         #[cfg(feature = "bevy_reflect")]
         app.register_asset_reflect::<TextureAtlasLayout>();
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
     }
 }
 

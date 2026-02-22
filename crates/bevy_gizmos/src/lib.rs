@@ -19,7 +19,7 @@
 //!
 //! See the documentation on [Gizmos](crate::gizmos::Gizmos) for more examples.
 
-extern crate alloc; // Required to make proc macros work in bevy itself.
+// Required to make proc macros work in bevy itself.
 extern crate self as bevy_gizmos;
 
 pub mod aabb;
@@ -64,7 +64,7 @@ pub mod prelude {
     pub use crate::light::{LightGizmoColor, LightGizmoConfigGroup, ShowLightGizmo};
 }
 
-use bevy_app::{App, FixedFirst, FixedLast, Last, Plugin, PluginDependency, RunFixedMainLoop};
+use bevy_app::{App, FixedFirst, FixedLast, Last, Plugin, RunFixedMainLoop};
 use bevy_asset::{Asset, AssetApp, Assets, Handle};
 use bevy_ecs::{
     resource::Resource,
@@ -75,7 +75,6 @@ use bevy_reflect::TypePath;
 
 use crate::{config::ErasedGizmoConfigGroup, gizmos::GizmoBuffer};
 
-use bevy_app::app_builder::AppBuilder;
 use bevy_time::Fixed;
 use bevy_utils::TypeIdMap;
 use config::{DefaultGizmoConfigGroup, GizmoConfig, GizmoConfigGroup, GizmoConfigStore};
@@ -94,20 +93,11 @@ impl Plugin for GizmoPlugin {
             .init_resource::<GizmoHandles>()
             // We insert the Resource GizmoConfigStore into the world implicitly here if it does not exist.
             .init_gizmo_group::<DefaultGizmoConfigGroup>();
-    }
 
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((aabb::AabbGizmoPlugin, global::GlobalGizmosPlugin));
+        app.add_plugins((aabb::AabbGizmoPlugin, global::GlobalGizmosPlugin));
 
-            #[cfg(feature = "bevy_light")]
-            app.add_plugins(LightGizmoPlugin);
-        }))
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        use bevy_app::plugin_deps;
-        plugin_deps!(bevy_asset::AssetPlugin).into()
+        #[cfg(feature = "bevy_light")]
+        app.add_plugins(LightGizmoPlugin);
     }
 }
 

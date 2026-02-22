@@ -133,7 +133,7 @@ use bevy_core_pipeline::core_3d::graph::{Core3d, Node3d};
 use bevy_ecs::prelude::*;
 #[cfg(feature = "bluenoise_texture")]
 use bevy_image::{CompressedImageFormats, ImageType};
-use bevy_image::{Image, ImagePlugin, ImageSampler};
+use bevy_image::{Image, ImageSampler};
 use bevy_render::{
     alpha::AlphaMode,
     camera::sort_cameras,
@@ -147,7 +147,6 @@ use bevy_render::{
     ExtractSchedule, Render, RenderApp, RenderDebugFlags, RenderStartup, RenderSystems,
 };
 
-use bevy_core_pipeline::core_3d::Core3dPlugin;
 use std::path::PathBuf;
 
 fn shader_ref(path: PathBuf) -> ShaderRef {
@@ -216,9 +215,41 @@ impl Plugin for PbrPlugin {
         // Setup dummy shaders for when MeshletPlugin is not used to prevent shader import errors.
         load_shader_library!(app, "meshlet/dummy_visibility_buffer_resolve.wgsl");
 
-        app.init_asset::<StandardMaterial>();
         app.register_asset_reflect::<StandardMaterial>()
             .init_resource::<DefaultOpaqueRendererMethod>()
+            .add_plugins((
+                MeshRenderPlugin {
+                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
+                    debug_flags: self.debug_flags,
+                },
+                MaterialsPlugin {
+                    debug_flags: self.debug_flags,
+                },
+                MaterialPlugin::<StandardMaterial> {
+                    debug_flags: self.debug_flags,
+                    ..Default::default()
+                },
+                ScreenSpaceAmbientOcclusionPlugin,
+                FogPlugin,
+                ExtractResourcePlugin::<DefaultOpaqueRendererMethod>::default(),
+                SyncComponentPlugin::<ShadowFilteringMethod>::default(),
+                LightmapPlugin,
+                LightProbePlugin,
+                GpuMeshPreprocessPlugin {
+                    use_gpu_instance_buffer_builder: self.use_gpu_instance_buffer_builder,
+                },
+                VolumetricFogPlugin,
+                ScreenSpaceReflectionsPlugin,
+                ClusteredDecalPlugin,
+            ))
+            .add_plugins((
+                decal::ForwardDecalPlugin,
+                SyncComponentPlugin::<DirectionalLight>::default(),
+                SyncComponentPlugin::<PointLight>::default(),
+                SyncComponentPlugin::<SpotLight>::default(),
+                SyncComponentPlugin::<AmbientLight>::default(),
+            ))
+            .add_plugins((ScatteringMediumPlugin, AtmospherePlugin))
             .configure_sets(
                 PostUpdate,
                 (
@@ -227,6 +258,10 @@ impl Plugin for PbrPlugin {
                 )
                     .chain(),
             );
+
+        if self.add_default_deferred_lighting_plugin {
+            app.add_plugins(DeferredPbrLightingPlugin);
+        }
 
         // Initialize the default material handle.
         app.world_mut()
@@ -333,55 +368,6 @@ impl Plugin for PbrPlugin {
 
         let global_cluster_settings = make_global_cluster_settings(render_app.world());
         app.insert_resource(global_cluster_settings);
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        let use_gpu_instance_buffer_builder = self.use_gpu_instance_buffer_builder;
-        let debug_flags = self.debug_flags;
-        let add_default_deferred_lighting_plugin = self.add_default_deferred_lighting_plugin;
-        Some(Box::new(move |app| {
-            app.add_plugins((
-                MeshRenderPlugin {
-                    use_gpu_instance_buffer_builder,
-                    debug_flags,
-                },
-                MaterialsPlugin {
-                    debug_flags,
-                },
-                MaterialPlugin::<StandardMaterial> {
-                    debug_flags,
-                    ..Default::default()
-                },
-                ScreenSpaceAmbientOcclusionPlugin,
-                FogPlugin,
-                ExtractResourcePlugin::<DefaultOpaqueRendererMethod>::default(),
-                SyncComponentPlugin::<ShadowFilteringMethod>::default(),
-                LightmapPlugin,
-                LightProbePlugin,
-                GpuMeshPreprocessPlugin {
-                    use_gpu_instance_buffer_builder,
-                },
-                VolumetricFogPlugin,
-                ScreenSpaceReflectionsPlugin,
-                ClusteredDecalPlugin,
-            ))
-                .add_plugins((
-                    decal::ForwardDecalPlugin,
-                    SyncComponentPlugin::<DirectionalLight>::default(),
-                    SyncComponentPlugin::<PointLight>::default(),
-                    SyncComponentPlugin::<SpotLight>::default(),
-                    SyncComponentPlugin::<AmbientLight>::default(),
-                ))
-                .add_plugins((ScatteringMediumPlugin, AtmospherePlugin));
-
-            if add_default_deferred_lighting_plugin {
-                app.add_plugins(DeferredPbrLightingPlugin);
-            }
-        }))
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(bevy_render::RenderPlugin, bevy_asset::AssetPlugin, ImagePlugin, Core3dPlugin).into()
     }
 }
 

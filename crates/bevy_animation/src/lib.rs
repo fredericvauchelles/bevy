@@ -37,7 +37,7 @@ use crate::{
     prelude::EvaluatorId,
 };
 
-use bevy_app::{AnimationSystems, App, Plugin, PluginDependency, PostUpdate};
+use bevy_app::{AnimationSystems, App, Plugin, PostUpdate};
 use bevy_asset::{Asset, AssetApp, AssetEventSystems, Assets};
 use bevy_ecs::{prelude::*, world::EntityMutExcept};
 use bevy_math::FloatOrd;
@@ -1254,11 +1254,6 @@ impl Plugin for AnimationPlugin {
                     .in_set(AnimationSystems)
                     .before(TransformSystems::Propagate),
             );
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        use bevy_app::plugin_deps;
-        plugin_deps!(bevy_asset::AssetPlugin).into()
     }
 }
 

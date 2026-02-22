@@ -5,10 +5,7 @@
     html_favicon_url = "https://bevy.org/assets/icon.png"
 )]
 
-extern crate alloc;
-
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{Plugin, PluginDependency};
+use bevy_app::Plugin;
 use contrast_adaptive_sharpening::CasPlugin;
 use fxaa::FxaaPlugin;
 use smaa::SmaaPlugin;
@@ -26,23 +23,14 @@ pub mod taa;
 pub struct AntiAliasPlugin;
 
 impl Plugin for AntiAliasPlugin {
-    fn build(&self, _: &mut bevy_app::App) {}
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                FxaaPlugin,
-                SmaaPlugin,
-                TemporalAntiAliasPlugin,
-                CasPlugin,
-                #[cfg(all(feature = "dlss", not(feature = "force_disable_dlss")))]
-                dlss::DlssPlugin,
-            ));
-        }))
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        use bevy_app::plugin_deps;
-        plugin_deps!(bevy_render::RenderPlugin).into()
+    fn build(&self, app: &mut bevy_app::App) {
+        app.add_plugins((
+            FxaaPlugin,
+            SmaaPlugin,
+            TemporalAntiAliasPlugin,
+            CasPlugin,
+            #[cfg(all(feature = "dlss", not(feature = "force_disable_dlss")))]
+            dlss::DlssPlugin,
+        ));
     }
 }

@@ -1,7 +1,5 @@
 use crate::NodePbr;
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, load_embedded_asset, Handle};
 use bevy_camera::{Camera, Camera3d};
 use bevy_core_pipeline::{
@@ -19,12 +17,25 @@ use bevy_ecs::{
 };
 use bevy_image::ToExtents;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{camera::{ExtractedCamera, TemporalJitter}, diagnostic::RecordDiagnostics, extract_component::ExtractComponent, globals::{GlobalsBuffer, GlobalsUniform}, render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner}, render_resource::{
-    binding_types::{
-        sampler, texture_2d, texture_depth_2d, texture_storage_2d, uniform_buffer,
+use bevy_render::{
+    camera::{ExtractedCamera, TemporalJitter},
+    diagnostic::RecordDiagnostics,
+    extract_component::ExtractComponent,
+    globals::{GlobalsBuffer, GlobalsUniform},
+    render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner},
+    render_resource::{
+        binding_types::{
+            sampler, texture_2d, texture_depth_2d, texture_storage_2d, uniform_buffer,
+        },
+        *,
     },
-    *,
-}, renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue}, sync_component::SyncComponentPlugin, sync_world::RenderEntity, texture::{CachedTexture, TextureCache}, view::{Msaa, ViewUniform, ViewUniformOffset, ViewUniforms}, Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems};
+    renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue},
+    sync_component::SyncComponentPlugin,
+    sync_world::RenderEntity,
+    texture::{CachedTexture, TextureCache},
+    view::{Msaa, ViewUniform, ViewUniformOffset, ViewUniforms},
+    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
+};
 use bevy_shader::{load_shader_library, Shader, ShaderDefVal};
 use bevy_utils::prelude::default;
 use core::mem;
@@ -40,6 +51,8 @@ impl Plugin for ScreenSpaceAmbientOcclusionPlugin {
         embedded_asset!(app, "preprocess_depth.wgsl");
         embedded_asset!(app, "ssao.wgsl");
         embedded_asset!(app, "spatial_denoise.wgsl");
+
+        app.add_plugins(SyncComponentPlugin::<ScreenSpaceAmbientOcclusion>::default());
     }
 
     fn finish(&self, app: &mut App) {
@@ -83,16 +96,6 @@ impl Plugin for ScreenSpaceAmbientOcclusionPlugin {
                     Node3d::StartMainPass,
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(SyncComponentPlugin::<ScreenSpaceAmbientOcclusion>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

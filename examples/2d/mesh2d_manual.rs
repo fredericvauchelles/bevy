@@ -4,6 +4,7 @@
 //! Check out the "mesh2d" example for simpler / higher level 2d meshes.
 //!
 //! [`Material2d`]: bevy::sprite::Material2d
+
 use bevy::{
     asset::RenderAssetUsages,
     color::palettes::basic::YELLOW,
@@ -36,8 +37,6 @@ use bevy::{
         SetMesh2dViewBindGroup,
     },
 };
-use bevy_render::RenderPlugin;
-use std::borrow::Cow;
 use std::f32::consts::PI;
 
 fn main() {
@@ -303,6 +302,7 @@ impl Plugin for ColoredMesh2dPlugin {
         // shader, including `embedded_asset`/`load_embedded_asset`.
         let shader = shaders.add(Shader::from_wgsl(COLORED_MESH2D_SHADER, file!()));
 
+        app.add_plugins(SyncComponentPlugin::<ColoredMesh2d>::default());
 
         // Register our custom draw function, and add our render systems
         app.get_sub_app_mut(RenderApp)
@@ -323,16 +323,6 @@ impl Plugin for ColoredMesh2dPlugin {
                 Render,
                 queue_colored_mesh2d.in_set(RenderSystems::QueueMeshes),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(SyncComponentPlugin::<ColoredMesh2d>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -1,6 +1,10 @@
-use crate::{extract_resource::ExtractResource, render_resource::{ShaderType, UniformBuffer}, renderer::{RenderDevice, RenderQueue}, Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderSystems};
-use alloc::borrow::Cow;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use crate::{
+    extract_resource::ExtractResource,
+    render_resource::{ShaderType, UniformBuffer},
+    renderer::{RenderDevice, RenderQueue},
+    Extract, ExtractSchedule, Render, RenderApp, RenderSystems,
+};
+use bevy_app::{App, Plugin};
 use bevy_diagnostic::FrameCount;
 use bevy_ecs::prelude::*;
 use bevy_reflect::prelude::*;
@@ -22,10 +26,6 @@ impl Plugin for GlobalsPlugin {
                     prepare_globals_buffer.in_set(RenderSystems::PrepareResources),
                 );
         }
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

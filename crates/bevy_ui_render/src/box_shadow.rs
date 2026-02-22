@@ -1,6 +1,5 @@
 //! Box shadows rendering
 
-use alloc::borrow::Cow;
 use core::{hash::Hash, ops::Range};
 
 use bevy_app::prelude::*;
@@ -19,7 +18,13 @@ use bevy_image::BevyDefault as _;
 use bevy_math::{vec2, Affine2, FloatOrd, Rect, Vec2};
 use bevy_mesh::VertexBufferLayout;
 use bevy_render::sync_world::{MainEntity, TemporaryRenderEntity};
-use bevy_render::{render_phase::*, render_resource::{binding_types::uniform_buffer, *}, renderer::{RenderDevice, RenderQueue}, view::*, Extract, ExtractSchedule, Render, RenderPlugin, RenderSystems};
+use bevy_render::{
+    render_phase::*,
+    render_resource::{binding_types::uniform_buffer, *},
+    renderer::{RenderDevice, RenderQueue},
+    view::*,
+    Extract, ExtractSchedule, Render, RenderSystems,
+};
 use bevy_render::{RenderApp, RenderStartup};
 use bevy_shader::{Shader, ShaderDefVal};
 use bevy_ui::{
@@ -29,7 +34,7 @@ use bevy_ui::{
 use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
 
-use crate::{BoxShadowSamples, RenderUiSystems, TransparentUi, UiCameraMap, UiRenderPlugin};
+use crate::{BoxShadowSamples, RenderUiSystems, TransparentUi, UiCameraMap};
 
 use super::{stack_z_offsets, UiCameraView, QUAD_INDICES, QUAD_VERTEX_POSITIONS};
 
@@ -59,10 +64,6 @@ impl Plugin for BoxShadowPlugin {
                     ),
                 );
         }
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, UiRenderPlugin).into()
     }
 }
 

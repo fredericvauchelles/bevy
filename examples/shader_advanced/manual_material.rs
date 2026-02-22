@@ -35,8 +35,6 @@ use bevy::{
     },
     utils::Parallel,
 };
-use bevy_render::RenderPlugin;
-use std::borrow::Cow;
 use std::{any::TypeId, sync::Arc};
 
 const SHADER_ASSET_PATH: &str = "shaders/manual_material.wgsl";
@@ -53,6 +51,7 @@ struct ImageMaterialPlugin;
 impl Plugin for ImageMaterialPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<ImageMaterial>()
+            .add_plugins(ErasedRenderAssetPlugin::<ImageMaterial>::default())
             .add_systems(
                 PostUpdate,
                 check_entities_needing_specialization.after(AssetEventSystems),
@@ -77,16 +76,6 @@ impl Plugin for ImageMaterialPlugin {
                         .before(late_sweep_material_instances),
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ErasedRenderAssetPlugin::<ImageMaterial>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

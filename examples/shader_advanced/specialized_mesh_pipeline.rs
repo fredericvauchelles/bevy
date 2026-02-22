@@ -37,8 +37,6 @@ use bevy::{
         Render, RenderApp, RenderStartup, RenderSystems,
     },
 };
-use bevy_render::RenderPlugin;
-use std::borrow::Cow;
 
 const SHADER_ASSET_PATH: &str = "shaders/specialized_mesh_pipeline.wgsl";
 
@@ -104,6 +102,8 @@ fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
 struct CustomRenderedMeshPipelinePlugin;
 impl Plugin for CustomRenderedMeshPipelinePlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(ExtractComponentPlugin::<CustomRenderedEntity>::default());
+
         // We make sure to add these to the render app, not the main app.
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -118,16 +118,6 @@ impl Plugin for CustomRenderedMeshPipelinePlugin {
                 Render,
                 queue_custom_mesh_pipeline.in_set(RenderSystems::Queue),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ExtractComponentPlugin::<CustomRenderedEntity>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
     }
 }
 

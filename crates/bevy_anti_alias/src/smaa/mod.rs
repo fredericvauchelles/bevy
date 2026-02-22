@@ -29,13 +29,8 @@
 //! * Compatibility with SSAA and MSAA.
 //!
 //! [SMAA]: https://www.iryoku.com/smaa/
-
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
-use bevy_core_pipeline::core_2d::Core2dPlugin;
-use bevy_core_pipeline::core_3d::Core3dPlugin;
 #[cfg(not(feature = "smaa_luts"))]
 use bevy_core_pipeline::tonemapping::lut_placeholder;
 use bevy_core_pipeline::{
@@ -53,23 +48,34 @@ use bevy_ecs::{
     system::{lifetimeless::Read, Commands, Query, Res, ResMut},
     world::World,
 };
-use bevy_image::{BevyDefault, Image, ImagePlugin, ToExtents};
+use bevy_image::{BevyDefault, Image, ToExtents};
 use bevy_math::{vec4, Vec4};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
-use bevy_render::{camera::ExtractedCamera, diagnostic::RecordDiagnostics, extract_component::{ExtractComponent, ExtractComponentPlugin}, render_asset::RenderAssets, render_graph::{
-    NodeRunError, RenderGraphContext, RenderGraphExt as _, ViewNode, ViewNodeRunner,
-}, render_resource::{
-    binding_types::{sampler, texture_2d, uniform_buffer},
-    AddressMode, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntries, CachedRenderPipelineId, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, DynamicUniformBuffer, FilterMode, FragmentState,
-    LoadOp, Operations, PipelineCache, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType,
-    SpecializedRenderPipeline, SpecializedRenderPipelines, StencilFaceState, StencilOperation,
-    StencilState, StoreOp, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureSampleType, TextureUsages, TextureView, VertexState,
-}, renderer::{RenderContext, RenderDevice, RenderQueue}, texture::{CachedTexture, GpuImage, TextureCache}, view::{ExtractedView, ViewTarget}, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
+use bevy_render::{
+    camera::ExtractedCamera,
+    diagnostic::RecordDiagnostics,
+    extract_component::{ExtractComponent, ExtractComponentPlugin},
+    render_asset::RenderAssets,
+    render_graph::{
+        NodeRunError, RenderGraphContext, RenderGraphExt as _, ViewNode, ViewNodeRunner,
+    },
+    render_resource::{
+        binding_types::{sampler, texture_2d, uniform_buffer},
+        AddressMode, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
+        BindGroupLayoutEntries, CachedRenderPipelineId, ColorTargetState, ColorWrites,
+        CompareFunction, DepthStencilState, DynamicUniformBuffer, FilterMode, FragmentState,
+        LoadOp, Operations, PipelineCache, RenderPassColorAttachment,
+        RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline,
+        RenderPipelineDescriptor, SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType,
+        SpecializedRenderPipeline, SpecializedRenderPipelines, StencilFaceState, StencilOperation,
+        StencilState, StoreOp, TextureDescriptor, TextureDimension, TextureFormat,
+        TextureSampleType, TextureUsages, TextureView, VertexState,
+    },
+    renderer::{RenderContext, RenderDevice, RenderQueue},
+    texture::{CachedTexture, GpuImage, TextureCache},
+    view::{ExtractedView, ViewTarget},
+    Render, RenderApp, RenderStartup, RenderSystems,
+};
 use bevy_shader::{Shader, ShaderDefVal};
 use bevy_utils::prelude::default;
 
@@ -326,6 +332,8 @@ impl Plugin for SmaaPlugin {
             }
         };
 
+        app.add_plugins(ExtractComponentPlugin::<Smaa>::default());
+
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -362,16 +370,6 @@ impl Plugin for SmaaPlugin {
                     Node2d::EndMainPassPostProcessing,
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ExtractComponentPlugin::<Smaa>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, ImagePlugin, Core3dPlugin, Core2dPlugin).into()
     }
 }
 

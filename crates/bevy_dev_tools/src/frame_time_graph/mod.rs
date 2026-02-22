@@ -1,16 +1,17 @@
 //! Module containing logic for the frame time graph
 
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, Plugin, PluginDependency, Update};
+use bevy_app::{Plugin, Update};
 use bevy_asset::{load_internal_asset, uuid_handle, Asset, Assets, Handle};
 use bevy_diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_ecs::system::{Res, ResMut};
 use bevy_math::ops::log2;
 use bevy_reflect::TypePath;
-use bevy_render::{render_resource::{AsBindGroup, ShaderType}, storage::ShaderStorageBuffer, RenderPlugin};
+use bevy_render::{
+    render_resource::{AsBindGroup, ShaderType},
+    storage::ShaderStorageBuffer,
+};
 use bevy_shader::{Shader, ShaderRef};
 use bevy_ui_render::prelude::{UiMaterial, UiMaterialPlugin};
-use std::borrow::Cow;
 
 use crate::fps_overlay::FpsOverlayConfig;
 
@@ -29,18 +30,14 @@ impl Plugin for FrameTimeGraphPlugin {
             Shader::from_wgsl
         );
 
-        app
+        // TODO: Use plugin dependencies, see https://github.com/bevyengine/bevy/issues/69
+        if !app.is_plugin_added::<FrameTimeDiagnosticsPlugin>() {
+            panic!("Requires FrameTimeDiagnosticsPlugin");
+            // app.add_plugins(FrameTimeDiagnosticsPlugin);
+        }
+
+        app.add_plugins(UiMaterialPlugin::<FrametimeGraphMaterial>::default())
             .add_systems(Update, update_frame_time_values);
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(UiMaterialPlugin::<FrametimeGraphMaterial>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, FrameTimeDiagnosticsPlugin).into()
     }
 }
 

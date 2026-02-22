@@ -29,9 +29,7 @@
 //!
 //! [Henyey-Greenstein phase function]: https://www.pbr-book.org/4ed/Volume_Scattering/Phase_Functions#TheHenyeyndashGreensteinPhaseFunction
 
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, Assets, Handle};
 use bevy_core_pipeline::core_3d::{
     graph::{Core3d, Node3d},
@@ -43,8 +41,13 @@ use bevy_math::{
     primitives::{Cuboid, Plane3d},
     Vec2, Vec3,
 };
-use bevy_mesh::{Mesh, MeshPlugin, Meshable};
-use bevy_render::{render_graph::{RenderGraphExt, ViewNodeRunner}, render_resource::SpecializedRenderPipelines, sync_component::SyncComponentPlugin, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
+use bevy_mesh::{Mesh, Meshable};
+use bevy_render::{
+    render_graph::{RenderGraphExt, ViewNodeRunner},
+    render_resource::SpecializedRenderPipelines,
+    sync_component::SyncComponentPlugin,
+    ExtractSchedule, Render, RenderApp, RenderStartup, RenderSystems,
+};
 use render::{VolumetricFogNode, VolumetricFogPipeline, VolumetricFogUniformBuffer};
 
 use crate::{graph::NodePbr, volumetric_fog::render::init_volumetric_fog_pipeline};
@@ -67,6 +70,8 @@ impl Plugin for VolumetricFogPlugin {
         let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
         let plane_mesh = meshes.add(Plane3d::new(Vec3::Z, Vec2::ONE).mesh());
         let cube_mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0).mesh());
+
+        app.add_plugins(SyncComponentPlugin::<FogVolume>::default());
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -105,15 +110,5 @@ impl Plugin for VolumetricFogPlugin {
                     Node3d::StartMainPassPostProcessing,
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(SyncComponentPlugin::<FogVolume>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, MeshPlugin).into()
     }
 }

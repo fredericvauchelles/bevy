@@ -1,4 +1,3 @@
-use alloc::borrow::Cow;
 use core::{
     f32::consts::{FRAC_PI_2, TAU},
     hash::Hash,
@@ -23,7 +22,14 @@ use bevy_math::{
 };
 use bevy_math::{Affine2, Vec2Swizzles};
 use bevy_mesh::VertexBufferLayout;
-use bevy_render::{render_phase::*, render_resource::{binding_types::uniform_buffer, *}, renderer::{RenderDevice, RenderQueue}, sync_world::TemporaryRenderEntity, view::*, Extract, ExtractSchedule, Render, RenderPlugin, RenderSystems};
+use bevy_render::{
+    render_phase::*,
+    render_resource::{binding_types::uniform_buffer, *},
+    renderer::{RenderDevice, RenderQueue},
+    sync_world::TemporaryRenderEntity,
+    view::*,
+    Extract, ExtractSchedule, Render, RenderSystems,
+};
 use bevy_render::{sync_world::MainEntity, RenderStartup};
 use bevy_shader::Shader;
 use bevy_sprite::BorderRect;
@@ -62,10 +68,6 @@ impl Plugin for GradientPlugin {
                     ),
                 );
         }
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, UiRenderPlugin).into()
     }
 }
 

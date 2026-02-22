@@ -1,7 +1,5 @@
-use crate::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
-use bevy_asset::{embedded_asset, load_embedded_asset, AssetPlugin, AssetServer, Handle};
+use bevy_app::{App, Plugin};
+use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_camera::Exposure;
 use bevy_ecs::{
     prelude::{Component, Entity},
@@ -27,7 +25,7 @@ use bevy_render::{
     renderer::RenderDevice,
     texture::GpuImage,
     view::{ExtractedView, Msaa, ViewTarget, ViewUniform, ViewUniforms},
-    Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems,
+    Render, RenderApp, RenderStartup, RenderSystems,
 };
 use bevy_shader::Shader;
 use bevy_transform::components::Transform;
@@ -47,6 +45,11 @@ impl Plugin for SkyboxPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "skybox.wgsl");
         embedded_asset!(app, "skybox_prepass.wgsl");
+
+        app.add_plugins((
+            ExtractComponentPlugin::<Skybox>::default(),
+            UniformComponentPlugin::<SkyboxUniforms>::default(),
+        ));
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -69,19 +72,6 @@ impl Plugin for SkyboxPlugin {
                         .in_set(RenderSystems::PrepareBindGroups),
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                ExtractComponentPlugin::<Skybox>::default(),
-                UniformComponentPlugin::<SkyboxUniforms>::default(),
-            ));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin, RenderPlugin).into()
     }
 }
 

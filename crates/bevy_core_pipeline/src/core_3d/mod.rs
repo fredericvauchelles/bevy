@@ -70,6 +70,8 @@ pub const DEPTH_TEXTURE_SAMPLING_SUPPORTED: bool = false;
 #[cfg(any(feature = "webgpu", not(target_arch = "wasm32")))]
 pub const DEPTH_TEXTURE_SAMPLING_SUPPORTED: bool = true;
 
+use core::ops::Range;
+
 use bevy_camera::{Camera, Camera3d, Camera3dDepthLoadOp};
 use bevy_diagnostic::FrameCount;
 use bevy_render::{
@@ -80,34 +82,11 @@ use bevy_render::{
     render_phase::PhaseItemBatchSetKey,
     texture::CachedTexture,
     view::{prepare_view_targets, NoIndirectDrawing, RetainedViewEntity},
-    RenderPlugin,
 };
-use core::ops::Range;
 pub use main_opaque_pass_3d_node::*;
 pub use main_transparent_pass_3d_node::*;
-use std::borrow::Cow;
 
-use crate::{
-    core_3d::main_transmissive_pass_3d_node::MainTransmissivePass3dNode,
-    deferred::{
-        copy_lighting_id::CopyDeferredLightingIdNode,
-        node::{EarlyDeferredGBufferPrepassNode, LateDeferredGBufferPrepassNode},
-        AlphaMask3dDeferred, Opaque3dDeferred, DEFERRED_LIGHTING_PASS_ID_FORMAT,
-        DEFERRED_PREPASS_FORMAT,
-    },
-    prepass::{
-        node::{EarlyPrepassNode, LatePrepassNode},
-        AlphaMask3dPrepass, DeferredPrepass, DeferredPrepassDoubleBuffer, DepthPrepass,
-        DepthPrepassDoubleBuffer, MotionVectorPrepass, NormalPrepass, Opaque3dPrepass,
-        OpaqueNoLightmap3dBatchSetKey, OpaqueNoLightmap3dBinKey, ViewPrepassTextures,
-        MOTION_VECTOR_PREPASS_FORMAT, NORMAL_PREPASS_FORMAT,
-    },
-    skybox::SkyboxPlugin,
-    tonemapping::{DebandDither, Tonemapping, TonemappingNode},
-    upscaling::UpscalingNode,
-};
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency, PostUpdate};
+use bevy_app::{App, Plugin, PostUpdate};
 use bevy_asset::UntypedAssetId;
 use bevy_color::LinearRgba;
 use bevy_ecs::prelude::*;
@@ -137,6 +116,26 @@ use bevy_render::{
 use nonmax::NonMaxU32;
 use tracing::warn;
 
+use crate::{
+    core_3d::main_transmissive_pass_3d_node::MainTransmissivePass3dNode,
+    deferred::{
+        copy_lighting_id::CopyDeferredLightingIdNode,
+        node::{EarlyDeferredGBufferPrepassNode, LateDeferredGBufferPrepassNode},
+        AlphaMask3dDeferred, Opaque3dDeferred, DEFERRED_LIGHTING_PASS_ID_FORMAT,
+        DEFERRED_PREPASS_FORMAT,
+    },
+    prepass::{
+        node::{EarlyPrepassNode, LatePrepassNode},
+        AlphaMask3dPrepass, DeferredPrepass, DeferredPrepassDoubleBuffer, DepthPrepass,
+        DepthPrepassDoubleBuffer, MotionVectorPrepass, NormalPrepass, Opaque3dPrepass,
+        OpaqueNoLightmap3dBatchSetKey, OpaqueNoLightmap3dBinKey, ViewPrepassTextures,
+        MOTION_VECTOR_PREPASS_FORMAT, NORMAL_PREPASS_FORMAT,
+    },
+    skybox::SkyboxPlugin,
+    tonemapping::{DebandDither, Tonemapping, TonemappingNode},
+    upscaling::UpscalingNode,
+};
+
 use self::graph::{Core3d, Node3d};
 
 pub struct Core3dPlugin;
@@ -148,6 +147,7 @@ impl Plugin for Core3dPlugin {
                 CameraRenderGraph::new(Core3d)
             })
             .register_required_components::<Camera3d, Tonemapping>()
+            .add_plugins((SkyboxPlugin, ExtractComponentPlugin::<Camera3d>::default()))
             .add_systems(PostUpdate, check_msaa);
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
@@ -241,16 +241,6 @@ impl Plugin for Core3dPlugin {
                     Node3d::Upscaling,
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((SkyboxPlugin, ExtractComponentPlugin::<Camera3d>::default()));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

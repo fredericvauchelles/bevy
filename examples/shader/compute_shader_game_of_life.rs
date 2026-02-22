@@ -20,7 +20,6 @@ use bevy::{
     },
     shader::PipelineCacheError,
 };
-use bevy_render::RenderPlugin;
 use std::borrow::Cow;
 
 /// This example uses a shader source file from the assets subdirectory
@@ -96,6 +95,12 @@ struct GameOfLifeLabel;
 
 impl Plugin for GameOfLifeComputePlugin {
     fn build(&self, app: &mut App) {
+        // Extract the game of life image resource from the main world into the render world
+        // for operation on by the compute shader and display on the sprite.
+        app.add_plugins((
+            ExtractResourcePlugin::<GameOfLifeImages>::default(),
+            ExtractResourcePlugin::<GameOfLifeUniforms>::default(),
+        ));
         let render_app = app.sub_app_mut(RenderApp);
         render_app
             .add_systems(RenderStartup, init_game_of_life_pipeline)
@@ -107,21 +112,6 @@ impl Plugin for GameOfLifeComputePlugin {
         let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
         render_graph.add_node(GameOfLifeLabel, GameOfLifeNode::default());
         render_graph.add_node_edge(GameOfLifeLabel, bevy::render::graph::CameraDriverLabel);
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            // Extract the game of life image resource from the main world into the render world
-            // for operation on by the compute shader and display on the sprite.
-            app.add_plugins((
-                ExtractResourcePlugin::<GameOfLifeImages>::default(),
-                ExtractResourcePlugin::<GameOfLifeUniforms>::default(),
-            ));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

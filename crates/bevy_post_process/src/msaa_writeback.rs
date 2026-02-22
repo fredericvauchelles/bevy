@@ -1,16 +1,21 @@
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_camera::MsaaWriteback;
 use bevy_color::LinearRgba;
-use bevy_core_pipeline::core_2d::Core2dPlugin;
-use bevy_core_pipeline::core_3d::Core3dPlugin;
 use bevy_core_pipeline::{
     blit::{BlitPipeline, BlitPipelineKey},
     core_2d::graph::{Core2d, Node2d},
     core_3d::graph::{Core3d, Node3d},
 };
 use bevy_ecs::{prelude::*, query::QueryItem};
-use bevy_render::{camera::ExtractedCamera, diagnostic::RecordDiagnostics, render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner}, render_resource::*, renderer::RenderContext, view::{Msaa, ViewTarget}, Render, RenderApp, RenderPlugin, RenderSystems};
-use std::borrow::Cow;
+use bevy_render::{
+    camera::ExtractedCamera,
+    diagnostic::RecordDiagnostics,
+    render_graph::{NodeRunError, RenderGraphContext, RenderGraphExt, ViewNode, ViewNodeRunner},
+    render_resource::*,
+    renderer::RenderContext,
+    view::{Msaa, ViewTarget},
+    Render, RenderApp, RenderSystems,
+};
 
 /// This enables "msaa writeback" support for the `core_2d` and `core_3d` pipelines, which can be enabled on cameras
 /// using [`bevy_camera::Camera::msaa_writeback`]. See the docs on that field for more information.
@@ -42,10 +47,6 @@ impl Plugin for MsaaWritebackPlugin {
                 )
                 .add_render_graph_edge(Core3d, Node3d::MsaaWriteback, Node3d::StartMainPass);
         }
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin, Core2dPlugin, Core3dPlugin).into()
     }
 }
 

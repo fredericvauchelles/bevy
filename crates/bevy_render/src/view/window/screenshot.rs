@@ -14,7 +14,7 @@ use crate::{
     ExtractSchedule, MainWorld, Render, RenderApp, RenderStartup, RenderSystems,
 };
 use alloc::{borrow::Cow, sync::Arc};
-use bevy_app::{plugin_deps, First, Plugin, PluginDependency, Update};
+use bevy_app::{First, Plugin, Update};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle, RenderAssetUsages};
 use bevy_camera::{ManualTextureViewHandle, NormalizedRenderTarget, RenderTarget};
 use bevy_derive::{Deref, DerefMut};
@@ -24,7 +24,6 @@ use bevy_ecs::{
 use bevy_image::{Image, TextureFormatPixelInfo, ToExtents};
 use bevy_platform::collections::HashSet;
 use bevy_reflect::Reflect;
-use bevy_render::RenderPlugin;
 use bevy_shader::Shader;
 use bevy_tasks::AsyncComputeTaskPool;
 use bevy_utils::default;
@@ -434,10 +433,6 @@ impl Plugin for ScreenshotPlugin {
                     .before(prepare_view_targets)
                     .in_set(RenderSystems::ManageViews),
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

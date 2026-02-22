@@ -4,9 +4,11 @@
 //!
 //! Users need to use the [`FullscreenMaterial`] trait to define the parameters like the graph label or the graph ordering.
 
+use core::any::type_name;
+use core::marker::PhantomData;
+
 use crate::{core_2d::graph::Core2d, core_3d::graph::Core3d, FullscreenShader};
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::AssetServer;
 use bevy_camera::{Camera2d, Camera3d};
 use bevy_ecs::{
@@ -18,26 +20,30 @@ use bevy_ecs::{
     world::{FromWorld, World},
 };
 use bevy_image::BevyDefault;
-use bevy_render::{extract_component::{
-    ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
-    UniformComponentPlugin,
-}, render_graph::{
-    InternedRenderLabel, InternedRenderSubGraph, NodeRunError, RenderGraph, RenderGraphContext,
-    RenderGraphError, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
-}, render_resource::{
-    binding_types::{sampler, texture_2d, uniform_buffer},
-    encase::internal::WriteInto,
-    BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
-    CachedRenderPipelineId, ColorTargetState, ColorWrites, FragmentState, Operations,
-    PipelineCache, RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor,
-    Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType, TextureFormat,
-    TextureSampleType,
-}, renderer::{RenderContext, RenderDevice}, view::ViewTarget, ExtractSchedule, MainWorld, RenderApp, RenderPlugin, RenderStartup};
+use bevy_render::{
+    extract_component::{
+        ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
+        UniformComponentPlugin,
+    },
+    render_graph::{
+        InternedRenderLabel, InternedRenderSubGraph, NodeRunError, RenderGraph, RenderGraphContext,
+        RenderGraphError, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
+    },
+    render_resource::{
+        binding_types::{sampler, texture_2d, uniform_buffer},
+        encase::internal::WriteInto,
+        BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
+        CachedRenderPipelineId, ColorTargetState, ColorWrites, FragmentState, Operations,
+        PipelineCache, RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor,
+        Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages, ShaderType, TextureFormat,
+        TextureSampleType,
+    },
+    renderer::{RenderContext, RenderDevice},
+    view::ViewTarget,
+    ExtractSchedule, MainWorld, RenderApp, RenderStartup,
+};
 use bevy_shader::ShaderRef;
 use bevy_utils::default;
-use core::any::type_name;
-use core::marker::PhantomData;
-use std::borrow::Cow;
 use tracing::warn;
 
 #[derive(Default)]
@@ -46,6 +52,10 @@ pub struct FullscreenMaterialPlugin<T: FullscreenMaterial> {
 }
 impl<T: FullscreenMaterial> Plugin for FullscreenMaterialPlugin<T> {
     fn build(&self, app: &mut App) {
+        app.add_plugins((
+            ExtractComponentPlugin::<T>::default(),
+            UniformComponentPlugin::<T>::default(),
+        ));
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -85,19 +95,6 @@ impl<T: FullscreenMaterial> Plugin for FullscreenMaterialPlugin<T> {
             // it gets added to.
             render_app.add_systems(ExtractSchedule, extract_on_add::<T>);
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                ExtractComponentPlugin::<T>::default(),
-                UniformComponentPlugin::<T>::default(),
-            ));
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

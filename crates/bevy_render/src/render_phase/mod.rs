@@ -28,8 +28,7 @@ mod draw;
 mod draw_state;
 mod rangefinder;
 
-use alloc::borrow::Cow;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::change_detection::Tick;
 use bevy_ecs::entity::EntityHash;
@@ -51,6 +50,7 @@ use crate::batching::gpu_preprocessing::{
 use crate::renderer::RenderDevice;
 use crate::sync_world::{MainEntity, MainEntityHashMap};
 use crate::view::RetainedViewEntity;
+use crate::RenderDebugFlags;
 use crate::{
     batching::{
         self,
@@ -61,7 +61,6 @@ use crate::{
     render_resource::{CachedRenderPipelineId, GpuArrayBufferIndex, PipelineCache},
     Render, RenderApp, RenderSystems,
 };
-use crate::{RenderDebugFlags, RenderPlugin};
 use bevy_ecs::intern::Interned;
 use bevy_ecs::{
     define_label,
@@ -1189,10 +1188,6 @@ where
                 ),
             );
     }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
-    }
 }
 
 /// Stores the rendering instructions for a single phase that sorts items in all
@@ -1296,10 +1291,6 @@ where
                         .in_set(RenderSystems::PrepareResourcesCollectPhaseBuffers),
                 ),
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
     }
 }
 

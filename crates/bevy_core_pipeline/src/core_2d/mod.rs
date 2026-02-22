@@ -31,6 +31,8 @@ pub mod graph {
     }
 }
 
+use core::ops::Range;
+
 use bevy_asset::UntypedAssetId;
 use bevy_camera::{Camera, Camera2d};
 use bevy_image::ToExtents;
@@ -40,19 +42,15 @@ use bevy_render::{
     camera::CameraRenderGraph,
     render_phase::PhaseItemBatchSetKey,
     view::{ExtractedView, RetainedViewEntity},
-    RenderPlugin,
 };
-use core::ops::Range;
 pub use main_opaque_pass_2d_node::*;
 pub use main_transparent_pass_2d_node::*;
-use std::borrow::Cow;
 
 use crate::{
     tonemapping::{DebandDither, Tonemapping, TonemappingNode},
     upscaling::UpscalingNode,
 };
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_ecs::prelude::*;
 use bevy_math::FloatOrd;
 use bevy_render::{
@@ -87,7 +85,8 @@ impl Plugin for Core2dPlugin {
             .register_required_components_with::<Camera2d, CameraRenderGraph>(|| {
                 CameraRenderGraph::new(Core2d)
             })
-            .register_required_components_with::<Camera2d, Tonemapping>(|| Tonemapping::None);
+            .register_required_components_with::<Camera2d, Tonemapping>(|| Tonemapping::None)
+            .add_plugins(ExtractComponentPlugin::<Camera2d>::default());
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -137,16 +136,6 @@ impl Plugin for Core2dPlugin {
                     Node2d::Upscaling,
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ExtractComponentPlugin::<Camera2d>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

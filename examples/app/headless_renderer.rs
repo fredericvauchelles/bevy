@@ -31,9 +31,7 @@ use bevy::{
     window::ExitCondition,
     winit::WinitPlugin,
 };
-use bevy_render::RenderPlugin;
 use crossbeam_channel::{Receiver, Sender};
-use std::borrow::Cow;
 use std::{
     ops::{Deref, DerefMut},
     path::PathBuf,
@@ -226,10 +224,6 @@ impl Plugin for ImageCopyPlugin {
                 Render,
                 receive_image_from_buffer.after(RenderSystems::Render),
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

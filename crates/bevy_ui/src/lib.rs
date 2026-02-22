@@ -153,17 +153,23 @@ impl Plugin for UiPlugin {
                 PostUpdate,
                 PropagateSet::<ComputedUiTargetCamera>::default().in_set(UiSystems::Propagate),
             )
+            .add_plugins(HierarchyPropagatePlugin::<ComputedUiTargetCamera>::new(
+                PostUpdate,
+            ))
             .configure_sets(
                 PostUpdate,
                 PropagateSet::<ComputedUiRenderTargetInfo>::default().in_set(UiSystems::Propagate),
             )
+            .add_plugins(HierarchyPropagatePlugin::<ComputedUiRenderTargetInfo>::new(
+                PostUpdate,
+            ))
             .add_systems(
                 PreUpdate,
                 ui_focus_system.in_set(UiSystems::Focus).after(InputSystems),
             );
 
         #[cfg(feature = "bevy_picking")]
-        app
+        app.add_plugins(picking_backend::UiPickingPlugin)
             .add_systems(
                 First,
                 widget::viewport_picking.in_set(PickingSystems::PostInput),
@@ -212,23 +218,6 @@ impl Plugin for UiPlugin {
 
         build_text_interop(app);
     }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app
-                .add_plugins(HierarchyPropagatePlugin::<ComputedUiTargetCamera>::new(
-                    PostUpdate,
-                ))
-                .add_plugins(HierarchyPropagatePlugin::<ComputedUiRenderTargetInfo>::new(
-                    PostUpdate,
-                ));
-
-            #[cfg(feature = "bevy_picking")]
-            app.add_plugins(picking_backend::UiPickingPlugin);
-
-            app.add_plugins(accessibility::AccessibilityPlugin);
-        }))
-    }
 }
 
 fn build_text_interop(app: &mut App) {
@@ -262,6 +251,8 @@ fn build_text_interop(app: &mut App) {
                 .ambiguous_with(bevy_sprite::calculate_bounds_text2d),
         ),
     );
+
+    app.add_plugins(accessibility::AccessibilityPlugin);
 
     app.add_observer(interaction_states::on_add_disabled)
         .add_observer(interaction_states::on_remove_disabled)

@@ -127,12 +127,13 @@
 //!
 //! See the [glTF Extension Registry](https://github.com/KhronosGroup/glTF/blob/main/extensions/README.md) for more information on extensions.
 
-extern crate alloc;
 mod assets;
 pub mod convert_coordinates;
 mod label;
 mod loader;
 mod vertex_attributes;
+
+extern crate alloc;
 
 use alloc::sync::Arc;
 use std::sync::Mutex;
@@ -268,9 +269,5 @@ impl Plugin for GltfPlugin {
             default_convert_coordinates: self.convert_coordinates,
             extensions: extensions.0.clone(),
         });
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(bevy_asset::AssetPlugin).into()
     }
 }

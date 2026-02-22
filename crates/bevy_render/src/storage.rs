@@ -3,10 +3,8 @@ use crate::{
     render_resource::{Buffer, BufferUsages},
     renderer::RenderDevice,
 };
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
-use bevy_asset::{Asset, AssetApp, AssetId, AssetPlugin, RenderAssetUsages};
+use bevy_app::{App, Plugin};
+use bevy_asset::{Asset, AssetApp, AssetId, RenderAssetUsages};
 use bevy_ecs::system::{lifetimeless::SRes, SystemParamItem};
 use bevy_reflect::{prelude::ReflectDefault, Reflect};
 use bevy_utils::default;
@@ -19,18 +17,9 @@ pub struct StoragePlugin;
 
 impl Plugin for StoragePlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset::<ShaderStorageBuffer>()
+        app.add_plugins(RenderAssetPlugin::<GpuShaderStorageBuffer>::default())
+            .init_asset::<ShaderStorageBuffer>()
             .register_asset_reflect::<ShaderStorageBuffer>();
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(RenderAssetPlugin::<GpuShaderStorageBuffer>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
     }
 }
 

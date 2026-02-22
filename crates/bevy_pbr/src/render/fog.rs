@@ -1,10 +1,14 @@
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_color::{ColorToComponents, LinearRgba};
 use bevy_ecs::prelude::*;
 use bevy_math::{Vec3, Vec4};
-use bevy_render::{extract_component::ExtractComponentPlugin, render_resource::{DynamicUniformBuffer, ShaderType}, renderer::{RenderDevice, RenderQueue}, view::ExtractedView, Render, RenderApp, RenderPlugin, RenderSystems};
+use bevy_render::{
+    extract_component::ExtractComponentPlugin,
+    render_resource::{DynamicUniformBuffer, ShaderType},
+    renderer::{RenderDevice, RenderQueue},
+    view::ExtractedView,
+    Render, RenderApp, RenderSystems,
+};
 use bevy_shader::load_shader_library;
 
 use crate::{DistanceFog, FogFalloff};
@@ -129,20 +133,12 @@ impl Plugin for FogPlugin {
     fn build(&self, app: &mut App) {
         load_shader_library!(app, "fog.wgsl");
 
+        app.add_plugins(ExtractComponentPlugin::<DistanceFog>::default());
+
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app
                 .init_resource::<FogMeta>()
                 .add_systems(Render, prepare_fog.in_set(RenderSystems::PrepareResources));
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(ExtractComponentPlugin::<DistanceFog>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }

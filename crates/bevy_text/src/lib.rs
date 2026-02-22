@@ -106,8 +106,4 @@ impl Plugin for TextPlugin {
             assets.insert(AssetId::default(), asset).unwrap();
         };
     }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(bevy_asset::AssetPlugin).into()
-    }
 }

@@ -6,8 +6,6 @@
 
 //! This crate renders `bevy_gizmos` with `bevy_render`.
 
-extern crate alloc;
-
 /// System set label for the systems handling the rendering of gizmos.
 #[derive(SystemSet, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum GizmoRenderSystems {
@@ -26,7 +24,7 @@ mod pipeline_2d;
 #[cfg(feature = "bevy_pbr")]
 mod pipeline_3d;
 
-use bevy_app::{App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_ecs::{
     resource::Resource,
     schedule::{IntoScheduleConfigs, SystemSet},
@@ -35,10 +33,6 @@ use bevy_ecs::{
 
 use {bevy_gizmos::config::GizmoMeshConfig, bevy_mesh::VertexBufferLayout};
 
-use bevy_app::app_builder::AppBuilder;
-use bevy_render::render_resource::{
-    BindGroupLayoutDescriptor, PipelineCache, VertexAttribute, VertexStepMode,
-};
 use {
     crate::retained::extract_linegizmos,
     bevy_asset::AssetId,
@@ -67,6 +61,10 @@ use {
     bytemuck::cast_slice,
 };
 
+use bevy_render::render_resource::{
+    BindGroupLayoutDescriptor, PipelineCache, VertexAttribute, VertexStepMode,
+};
+
 use bevy_gizmos::{
     config::{GizmoConfigStore, GizmoLineJoint},
     GizmoAsset, GizmoHandles,
@@ -86,6 +84,9 @@ impl Plugin for GizmoRenderPlugin {
             embedded_asset!(app, "line_joints.wgsl");
         }
 
+        app.add_plugins(UniformComponentPlugin::<LineGizmoUniform>::default())
+            .add_plugins(RenderAssetPlugin::<GpuLineGizmo>::default());
+
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.add_systems(RenderStartup, init_line_gizmo_uniform_bind_group_layout);
 
@@ -95,38 +96,22 @@ impl Plugin for GizmoRenderPlugin {
             );
 
             render_app.add_systems(ExtractSchedule, (extract_gizmo_data, extract_linegizmos));
-        } else {
-            tracing::warn!("bevy_render feature is enabled but RenderApp was not detected. Are you sure you loaded GizmoPlugin after RenderPlugin?");
-        }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(UniformComponentPlugin::<LineGizmoUniform>::default())
-                .add_plugins(RenderAssetPlugin::<GpuLineGizmo>::default());
 
             #[cfg(feature = "bevy_sprite_render")]
-            if app.contains_plugin::<bevy_sprite_render::SpriteRenderPlugin>() {
+            if app.is_plugin_added::<bevy_sprite_render::SpriteRenderPlugin>() {
                 app.add_plugins(pipeline_2d::LineGizmo2dPlugin);
             } else {
                 tracing::warn!("bevy_sprite_render feature is enabled but bevy_sprite_render::SpriteRenderPlugin was not detected. Are you sure you loaded GizmoPlugin after SpriteRenderPlugin?");
             }
             #[cfg(feature = "bevy_pbr")]
-            if app.contains_plugin::<bevy_pbr::PbrPlugin>() {
+            if app.is_plugin_added::<bevy_pbr::PbrPlugin>() {
                 app.add_plugins(pipeline_3d::LineGizmo3dPlugin);
             } else {
                 tracing::warn!("bevy_pbr feature is enabled but bevy_pbr::PbrPlugin was not detected. Are you sure you loaded GizmoPlugin after PbrPlugin?");
             }
-        }))
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        use bevy_app::plugin_deps;
-        plugin_deps!(
-            bevy_render::RenderPlugin,
-            bevy_asset::AssetPlugin,
-            bevy_gizmos::GizmoPlugin
-        ).into()
+        } else {
+            tracing::warn!("bevy_render feature is enabled but RenderApp was not detected. Are you sure you loaded GizmoPlugin after RenderPlugin?");
+        }
     }
 }
 

@@ -1,10 +1,16 @@
 use bevy_app::prelude::*;
 use bevy_asset::{embedded_asset, AssetApp, Assets, Handle};
 use bevy_ecs::prelude::*;
-use bevy_render::{extract_component::ExtractComponentPlugin, render_asset::RenderAssetPlugin, render_graph::RenderGraphExt, render_resource::{
-    Buffer, BufferDescriptor, BufferUsages, PipelineCache, SpecializedComputePipelines,
-}, renderer::RenderDevice, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
-use std::borrow::Cow;
+use bevy_render::{
+    extract_component::ExtractComponentPlugin,
+    render_asset::RenderAssetPlugin,
+    render_graph::RenderGraphExt,
+    render_resource::{
+        Buffer, BufferDescriptor, BufferUsages, PipelineCache, SpecializedComputePipelines,
+    },
+    renderer::RenderDevice,
+    ExtractSchedule, Render, RenderApp, RenderStartup, RenderSystems,
+};
 
 mod buffers;
 mod compensation_curve;
@@ -37,13 +43,15 @@ impl Plugin for AutoExposurePlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "auto_exposure.wgsl");
 
-        app
+        app.add_plugins(RenderAssetPlugin::<GpuAutoExposureCompensationCurve>::default())
             .init_asset::<AutoExposureCompensationCurve>()
             .register_asset_reflect::<AutoExposureCompensationCurve>();
         app.world_mut()
             .resource_mut::<Assets<AutoExposureCompensationCurve>>()
             .insert(&Handle::default(), AutoExposureCompensationCurve::default())
             .unwrap();
+
+        app.add_plugins(ExtractComponentPlugin::<AutoExposure>::default());
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -73,17 +81,6 @@ impl Plugin for AutoExposurePlugin {
                     Node3d::Tonemapping,
                 ),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(RenderAssetPlugin::<GpuAutoExposureCompensationCurve>::default())
-                .add_plugins(ExtractComponentPlugin::<AutoExposure>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

@@ -12,7 +12,6 @@ pub use clear_color::*;
 pub use components::*;
 pub use projection::*;
 
-use bevy_app::app_builder::AppBuilder;
 use bevy_app::{App, Plugin};
 
 #[derive(Default)]
@@ -20,17 +19,11 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ClearColor>();
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins((
-                CameraProjectionPlugin,
-                visibility::VisibilityPlugin,
-                visibility::VisibilityRangePlugin,
-            ));
-        }))
+        app.init_resource::<ClearColor>().add_plugins((
+            CameraProjectionPlugin,
+            visibility::VisibilityPlugin,
+            visibility::VisibilityRangePlugin,
+        ));
     }
 }
 

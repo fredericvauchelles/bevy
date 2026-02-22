@@ -1,4 +1,3 @@
-use bevy_app::app_builder::AppBuilder;
 use bevy_app::{Plugin, PostUpdate};
 use bevy_asset::{Asset, Assets};
 use bevy_ecs::{
@@ -342,13 +341,8 @@ fn on_drag_cancel(
 pub struct ColorPlanePlugin;
 
 impl Plugin for ColorPlanePlugin {
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(UiMaterialPlugin::<ColorPlaneMaterial>::default());
-        }))
-    }
-
     fn build(&self, app: &mut bevy_app::App) {
+        app.add_plugins(UiMaterialPlugin::<ColorPlaneMaterial>::default());
         app.add_systems(PostUpdate, update_plane_color);
         app.add_observer(on_pointer_press)
             .add_observer(on_drag_start)

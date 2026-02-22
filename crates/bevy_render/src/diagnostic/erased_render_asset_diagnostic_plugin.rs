@@ -1,15 +1,14 @@
-use alloc::borrow::Cow;
 use core::{any::type_name, marker::PhantomData};
+
+use bevy_app::{Plugin, PreUpdate};
+use bevy_diagnostic::{Diagnostic, DiagnosticPath, Diagnostics, RegisterDiagnostic};
+use bevy_ecs::{resource::Resource, system::Res};
+use bevy_platform::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::{
     erased_render_asset::{ErasedRenderAsset, ErasedRenderAssets},
     Extract, ExtractSchedule, RenderApp,
 };
-use bevy_app::{plugin_deps, Plugin, PluginDependency, PreUpdate};
-use bevy_diagnostic::{Diagnostic, DiagnosticPath, Diagnostics, RegisterDiagnostic};
-use bevy_ecs::{resource::Resource, system::Res};
-use bevy_platform::sync::atomic::{AtomicUsize, Ordering};
-use bevy_render::RenderPlugin;
 
 /// Collects diagnostics for a [`ErasedRenderAsset`].
 ///
@@ -44,10 +43,6 @@ impl<A: ErasedRenderAsset> Plugin for ErasedRenderAssetDiagnosticPlugin<A> {
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.add_systems(ExtractSchedule, measure_erased_render_asset::<A>);
         }
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin).into()
     }
 }
 

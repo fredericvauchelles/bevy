@@ -45,7 +45,6 @@ pub mod prelude {
 
 use bevy_app::prelude::*;
 
-use bevy_asset::AssetPlugin;
 #[cfg(feature = "serialize")]
 use {bevy_asset::AssetApp, bevy_ecs::schedule::IntoScheduleConfigs};
 
@@ -108,10 +107,6 @@ impl Plugin for ScenePlugin {
                     scene_spawner.unregister_instance(scene_instance);
                 }
             });
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
     }
 }
 

@@ -6,11 +6,9 @@
 //! [`MeshInputUniform`]s instead and use the GPU to calculate the remaining
 //! derived fields in [`MeshUniform`].
 
-use alloc::borrow::Cow;
 use core::num::{NonZero, NonZeroU64};
 
-use crate::{graph::NodePbr, MeshCullingData, MeshCullingDataBuffer, MeshInputUniform, MeshRenderPlugin, MeshUniform};
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, load_embedded_asset, Handle};
 use bevy_core_pipeline::{
     core_3d::graph::{Core3d, Node3d},
@@ -29,26 +27,40 @@ use bevy_ecs::{
     world::{FromWorld, World},
 };
 use bevy_log::warn_once;
-use bevy_render::{batching::gpu_preprocessing::{
-    BatchedInstanceBuffers, GpuOcclusionCullingWorkItemBuffers, GpuPreprocessingMode,
-    GpuPreprocessingSupport, IndirectBatchSet, IndirectParametersBuffers,
-    IndirectParametersCpuMetadata, IndirectParametersGpuMetadata, IndirectParametersIndexed,
-    IndirectParametersNonIndexed, LatePreprocessWorkItemIndirectParameters, PreprocessWorkItem,
-    PreprocessWorkItemBuffers, UntypedPhaseBatchedInstanceBuffers,
-    UntypedPhaseIndirectParametersBuffers,
-}, diagnostic::RecordDiagnostics, experimental::occlusion_culling::OcclusionCulling, render_graph::{Node, NodeRunError, RenderGraphContext, RenderGraphExt}, render_resource::{
-    binding_types::{storage_buffer, storage_buffer_read_only, texture_2d, uniform_buffer},
-    BindGroup, BindGroupEntries, BindGroupLayoutDescriptor, BindingResource, Buffer,
-    BufferBinding, CachedComputePipelineId, ComputePassDescriptor, ComputePipelineDescriptor,
-    DynamicBindGroupLayoutEntries, PipelineCache, PushConstantRange, RawBufferVec,
-    ShaderStages, ShaderType, SpecializedComputePipeline, SpecializedComputePipelines,
-    TextureSampleType, UninitBufferVec,
-}, renderer::{RenderContext, RenderDevice, RenderQueue}, settings::WgpuFeatures, view::{ExtractedView, NoIndirectDrawing, ViewUniform, ViewUniformOffset, ViewUniforms}, Render, RenderApp, RenderPlugin, RenderSystems};
+use bevy_render::{
+    batching::gpu_preprocessing::{
+        BatchedInstanceBuffers, GpuOcclusionCullingWorkItemBuffers, GpuPreprocessingMode,
+        GpuPreprocessingSupport, IndirectBatchSet, IndirectParametersBuffers,
+        IndirectParametersCpuMetadata, IndirectParametersGpuMetadata, IndirectParametersIndexed,
+        IndirectParametersNonIndexed, LatePreprocessWorkItemIndirectParameters, PreprocessWorkItem,
+        PreprocessWorkItemBuffers, UntypedPhaseBatchedInstanceBuffers,
+        UntypedPhaseIndirectParametersBuffers,
+    },
+    diagnostic::RecordDiagnostics,
+    experimental::occlusion_culling::OcclusionCulling,
+    render_graph::{Node, NodeRunError, RenderGraphContext, RenderGraphExt},
+    render_resource::{
+        binding_types::{storage_buffer, storage_buffer_read_only, texture_2d, uniform_buffer},
+        BindGroup, BindGroupEntries, BindGroupLayoutDescriptor, BindingResource, Buffer,
+        BufferBinding, CachedComputePipelineId, ComputePassDescriptor, ComputePipelineDescriptor,
+        DynamicBindGroupLayoutEntries, PipelineCache, PushConstantRange, RawBufferVec,
+        ShaderStages, ShaderType, SpecializedComputePipeline, SpecializedComputePipelines,
+        TextureSampleType, UninitBufferVec,
+    },
+    renderer::{RenderContext, RenderDevice, RenderQueue},
+    settings::WgpuFeatures,
+    view::{ExtractedView, NoIndirectDrawing, ViewUniform, ViewUniformOffset, ViewUniforms},
+    Render, RenderApp, RenderSystems,
+};
 use bevy_shader::Shader;
 use bevy_utils::{default, TypeIdMap};
 use bitflags::bitflags;
 use smallvec::{smallvec, SmallVec};
 use tracing::warn;
+
+use crate::{
+    graph::NodePbr, MeshCullingData, MeshCullingDataBuffer, MeshInputUniform, MeshUniform,
+};
 
 use super::{ShadowView, ViewLightEntities};
 
@@ -500,10 +512,6 @@ impl Plugin for GpuMeshPreprocessPlugin {
                     NodePbr::MainBuildIndirectParameters,
                 )
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, MeshRenderPlugin).into()
     }
 }
 

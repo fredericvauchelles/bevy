@@ -65,12 +65,8 @@ impl Plugin for GltfToMesh2dPlugin {
             .0
             .write_blocking()
             .push(Box::new(GltfExtensionHandlerToMesh2d));
-    }
 
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(Material2dPlugin::<CustomMaterial>::default());
-        }))
+        app.add_plugins(Material2dPlugin::<CustomMaterial>::default());
     }
 }
 

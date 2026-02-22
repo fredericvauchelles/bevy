@@ -2,20 +2,24 @@ use crate::{
     ExtendedMaterial, Material, MaterialExtension, MaterialExtensionKey, MaterialExtensionPipeline,
     MaterialPlugin, StandardMaterial,
 };
-use alloc::borrow::Cow;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{Asset, Assets, Handle};
 use bevy_ecs::{
     component::Component, lifecycle::HookContext, resource::Resource, world::DeferredWorld,
 };
 use bevy_math::{prelude::Rectangle, Quat, Vec2, Vec3};
-use bevy_mesh::{Mesh, Mesh3d, MeshBuilder, MeshPlugin, MeshVertexBufferLayoutRef, Meshable};
+use bevy_mesh::{Mesh, Mesh3d, MeshBuilder, MeshVertexBufferLayoutRef, Meshable};
 use bevy_reflect::{Reflect, TypePath};
-use bevy_render::{alpha::AlphaMode, render_asset::RenderAssets, render_resource::{
-    AsBindGroup, AsBindGroupShaderType, CompareFunction, RenderPipelineDescriptor, ShaderType,
-    SpecializedMeshPipelineError,
-}, texture::GpuImage, RenderDebugFlags, RenderPlugin};
+use bevy_render::{
+    alpha::AlphaMode,
+    render_asset::RenderAssets,
+    render_resource::{
+        AsBindGroup, AsBindGroupShaderType, CompareFunction, RenderPipelineDescriptor, ShaderType,
+        SpecializedMeshPipelineError,
+    },
+    texture::GpuImage,
+    RenderDebugFlags,
+};
 use bevy_shader::load_shader_library;
 
 /// Plugin to render [`ForwardDecal`]s.
@@ -35,19 +39,11 @@ impl Plugin for ForwardDecalPlugin {
         );
 
         app.insert_resource(ForwardDecalMesh(mesh));
-    }
 
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(MaterialPlugin::<ForwardDecalMaterial<StandardMaterial>> {
-                debug_flags: RenderDebugFlags::default(),
-                ..Default::default()
-            });
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, MeshPlugin).into()
+        app.add_plugins(MaterialPlugin::<ForwardDecalMaterial<StandardMaterial>> {
+            debug_flags: RenderDebugFlags::default(),
+            ..Default::default()
+        });
     }
 }
 

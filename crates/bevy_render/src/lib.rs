@@ -26,11 +26,14 @@
     html_favicon_url = "https://bevy.org/assets/icon.png"
 )]
 
-extern crate alloc;
-extern crate core; // Required to make proc macros work in bevy itself.
-extern crate self as bevy_render;
 #[cfg(target_pointer_width = "16")]
 compile_error!("bevy_render cannot compile for a 16-bit platform.");
+
+extern crate alloc;
+extern crate core;
+
+// Required to make proc macros work in bevy itself.
+extern crate self as bevy_render;
 
 pub mod alpha;
 pub mod batching;
@@ -87,9 +90,8 @@ use crate::{
 };
 use alloc::sync::Arc;
 use batching::gpu_preprocessing::BatchingPlugin;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, AppLabel, Plugin, PluginDependency, SubApp};
-use bevy_asset::{AssetApp, AssetPlugin, AssetServer};
+use bevy_app::{App, AppLabel, Plugin, SubApp};
+use bevy_asset::{AssetApp, AssetServer};
 use bevy_ecs::{
     prelude::*,
     schedule::{ScheduleBuildSettings, ScheduleLabel},
@@ -357,6 +359,26 @@ impl Plugin for RenderPlugin {
             }
         };
 
+        app.add_plugins((
+            WindowRenderPlugin,
+            CameraPlugin,
+            ViewPlugin,
+            MeshRenderAssetPlugin,
+            GlobalsPlugin,
+            #[cfg(feature = "morph")]
+            mesh::MorphPlugin,
+            TexturePlugin,
+            BatchingPlugin {
+                debug_flags: self.debug_flags,
+            },
+            SyncWorldPlugin,
+            StoragePlugin,
+            GpuReadbackPlugin::default(),
+            OcclusionCullingPlugin,
+            #[cfg(feature = "tracing-tracy")]
+            diagnostic::RenderDiagnosticsPlugin,
+        ));
+
         app.init_resource::<RenderAssetBytesPerFrame>();
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.init_resource::<RenderAssetBytesPerFrameLimiter>();
@@ -418,35 +440,6 @@ impl Plugin for RenderPlugin {
                 .insert_resource(render_adapter)
                 .insert_resource(adapter_info);
         }
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        let debug_flags = self.debug_flags;
-        Some(Box::new(move |app| {
-            app.add_plugins((
-                WindowRenderPlugin,
-                CameraPlugin,
-                ViewPlugin,
-                MeshRenderAssetPlugin,
-                GlobalsPlugin,
-                #[cfg(feature = "morph")]
-                mesh::MorphPlugin,
-                TexturePlugin,
-                BatchingPlugin {
-                    debug_flags
-                },
-                SyncWorldPlugin,
-                StoragePlugin,
-                GpuReadbackPlugin::default(),
-                OcclusionCullingPlugin,
-                #[cfg(feature = "tracing-tracy")]
-                diagnostic::RenderDiagnosticsPlugin,
-            ));
-        }))
-    }
-
-    fn build_after(&self) -> alloc::borrow::Cow<'_, [PluginDependency]> {
-        plugin_deps!(AssetPlugin).into()
     }
 }
 

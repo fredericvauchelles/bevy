@@ -14,18 +14,9 @@
 //!
 //! [Depth of field]: https://en.wikipedia.org/wiki/Depth_of_field
 
-use crate::bloom::BloomPlugin;
-use bevy_app::app_builder::AppBuilder;
-use bevy_app::{plugin_deps, App, Plugin, PluginDependency};
+use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_camera::{Camera3d, PhysicalCameraParameters, Projection};
-use bevy_core_pipeline::{
-    core_3d::{
-        graph::{Core3d, Node3d},
-        DEPTH_TEXTURE_SAMPLING_SUPPORTED,
-    },
-    FullscreenShader,
-};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
     component::Component,
@@ -40,27 +31,45 @@ use bevy_ecs::{
 use bevy_image::BevyDefault as _;
 use bevy_math::ops;
 use bevy_reflect::{prelude::ReflectDefault, Reflect};
-use bevy_render::{diagnostic::RecordDiagnostics, extract_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin}, render_graph::{
-    NodeRunError, RenderGraphContext, RenderGraphExt as _, ViewNode, ViewNodeRunner,
-}, render_resource::{
-    binding_types::{
-        sampler, texture_2d, texture_depth_2d, texture_depth_2d_multisampled, uniform_buffer,
+use bevy_render::{
+    diagnostic::RecordDiagnostics,
+    extract_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin},
+    render_graph::{
+        NodeRunError, RenderGraphContext, RenderGraphExt as _, ViewNode, ViewNodeRunner,
     },
-    BindGroup, BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
-    CachedRenderPipelineId, ColorTargetState, ColorWrites, FilterMode, FragmentState, LoadOp,
-    Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages,
-    ShaderType, SpecializedRenderPipeline, SpecializedRenderPipelines, StoreOp,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages,
-}, renderer::{RenderContext, RenderDevice}, sync_component::SyncComponentPlugin, sync_world::RenderEntity, texture::{CachedTexture, TextureCache}, view::{
-    prepare_view_targets, ExtractedView, Msaa, ViewDepthTexture, ViewTarget, ViewUniform,
-    ViewUniformOffset, ViewUniforms,
-}, Extract, ExtractSchedule, Render, RenderApp, RenderPlugin, RenderStartup, RenderSystems};
+    render_resource::{
+        binding_types::{
+            sampler, texture_2d, texture_depth_2d, texture_depth_2d_multisampled, uniform_buffer,
+        },
+        BindGroup, BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
+        CachedRenderPipelineId, ColorTargetState, ColorWrites, FilterMode, FragmentState, LoadOp,
+        Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
+        RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor, ShaderStages,
+        ShaderType, SpecializedRenderPipeline, SpecializedRenderPipelines, StoreOp,
+        TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureUsages,
+    },
+    renderer::{RenderContext, RenderDevice},
+    sync_component::SyncComponentPlugin,
+    sync_world::RenderEntity,
+    texture::{CachedTexture, TextureCache},
+    view::{
+        prepare_view_targets, ExtractedView, Msaa, ViewDepthTexture, ViewTarget, ViewUniform,
+        ViewUniformOffset, ViewUniforms,
+    },
+    Extract, ExtractSchedule, Render, RenderApp, RenderStartup, RenderSystems,
+};
 use bevy_shader::Shader;
 use bevy_utils::{default, once};
 use smallvec::SmallVec;
-use std::borrow::Cow;
 use tracing::{info, warn};
+
+use bevy_core_pipeline::{
+    core_3d::{
+        graph::{Core3d, Node3d},
+        DEPTH_TEXTURE_SAMPLING_SUPPORTED,
+    },
+    FullscreenShader,
+};
 
 /// A plugin that adds support for the depth of field effect to Bevy.
 #[derive(Default)]
@@ -200,6 +209,10 @@ impl Plugin for DepthOfFieldPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "dof.wgsl");
 
+        app.add_plugins(UniformComponentPlugin::<DepthOfFieldUniform>::default());
+
+        app.add_plugins(SyncComponentPlugin::<DepthOfField>::default());
+
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
@@ -236,17 +249,6 @@ impl Plugin for DepthOfFieldPlugin {
                 Core3d,
                 (Node3d::Bloom, Node3d::DepthOfField, Node3d::Tonemapping),
             );
-    }
-
-    fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-        Some(Box::new(|app| {
-            app.add_plugins(UniformComponentPlugin::<DepthOfFieldUniform>::default());
-            app.add_plugins(SyncComponentPlugin::<DepthOfField>::default());
-        }))
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(RenderPlugin, BloomPlugin).into()
     }
 }
 

@@ -19,8 +19,6 @@ use bevy::{
         Render, RenderApp, RenderStartup, RenderSystems,
     },
 };
-use bevy_render::RenderPlugin;
-use std::borrow::Cow;
 
 /// This example uses a shader source file from the assets subdirectory
 const SHADER_ASSET_PATH: &str = "shaders/gpu_readback.wgsl";
@@ -60,10 +58,6 @@ impl Plugin for GpuReadbackPlugin {
                     // We don't need to recreate the bind group every frame
                     .run_if(not(resource_exists::<GpuBufferBindGroup>)),
             );
-    }
-
-    fn build_after(&'_ self) -> Cow<'_, [PluginDependency]> {
-        plugin_deps!(?RenderPlugin).into()
     }
 }
 
