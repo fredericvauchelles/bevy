@@ -41,8 +41,8 @@ impl AppBuilder {
     ///
     /// You can use it for existing plugin group that do not use the dependency system
     /// but are in a manually defined order
-    pub fn add_plugins_as_alias<M>(&mut self, alias: PluginId, plugins: impl Plugins<M>) -> &mut Self {
-        self.plugin_graph.add_plugins_as_alias(alias, plugins);
+    pub fn add_plugins_as_alias<M>(&mut self, alias: impl Into<PluginId>, plugins: impl Plugins<M>) -> &mut Self {
+        self.plugin_graph.add_plugins_as_alias(alias.into(), plugins);
         self
     }
 
@@ -60,7 +60,7 @@ impl AppBuilder {
         build: F,
         before: impl Into<Vec<PluginDependency>>,
         after: impl Into<Vec<PluginDependency>>,
-        id: PluginId,
+        id: impl Into<PluginId>,
     ) -> &mut Self {
         struct FnPlugin<F>(F, Vec<PluginDependency>, Vec<PluginDependency>, PluginId);
         impl<F: 'static + Sync + Send + Fn(&mut App)> Plugin for FnPlugin<F> {
@@ -77,7 +77,7 @@ impl AppBuilder {
                 (&*self.1).into()
             }
         }
-        self.add_plugins(FnPlugin(build, before.into(), after.into(), id.clone()))
+        self.add_plugins(FnPlugin(build, before.into(), after.into(), id.into()))
     }
 
     /// Add a build fn as a plugin with a random id.
@@ -176,8 +176,8 @@ impl AppBuilder {
                 .plugin_graph
                 .iter_plugins()
                 .flat_map(|p| p.plugins())
-                .filter(|p| !pre_built_plugins.contains(&p.deref().id()))
-                .flat_map(|p| p.deref().pre_build().into_iter().map(|pre_build| (p.deref().id(), pre_build)))
+                .filter(|p| !pre_built_plugins.contains(&p.id()))
+                .flat_map(|p| p.deref().pre_build().into_iter().map(|pre_build| (p.id(), pre_build)))
                 .collect::<Vec<_>>();
 
             if pre_builds.is_empty() {
