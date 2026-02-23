@@ -46,14 +46,6 @@ impl AppBuilder {
         self
     }
 
-    /// Add plugins to the graph
-    ///
-    /// If a plugin with the same [`PluginId`] is already added, then it will be overwritten.
-    pub fn init_plugins<P, M>(&mut self) -> &mut Self 
-    where P: Default + Plugins<M> {
-        self.add_plugins(P::default())
-    }
-
     /// Add a build fn as a plugin with provided id.
     pub fn add_build_with_id<F: 'static + Sync + Send + Fn(&mut App)>(
         &mut self,
