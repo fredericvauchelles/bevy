@@ -5,7 +5,7 @@ use bevy_app::*;
 use bevy_ecs::prelude::*;
 use bevy_platform::collections::*;
 use bevy_platform::prelude::*;
-use core::any::{Any, TypeId};
+use core::any::TypeId;
 use core::ops::Deref;
 pub use entry::GetPluginError;
 use entry::PluginEntry;
@@ -345,7 +345,7 @@ impl TryFrom<PluginGraph> for PluginGroupBuilder {
 
         {
             use bevy_platform::prelude::*;
-            log::trace!("Sorted plugins:\n\n[\n{}\n]", sorted.iter().flat_map(entry::PluginEntry::plugins).map(|n| format!("\"{}\"", n.deref().id())).collect::<Vec<_>>().join(",\n"));
+            log::trace!("Sorted plugins:\n\n[\n{}\n]", sorted.iter().flat_map(PluginEntry::plugins).map(|n| format!("\"{}\"", n.deref().id())).collect::<Vec<_>>().join(",\n"));
         }
         let mut result = PluginGraphPluginGroup.build();
         result.extend(sorted.into_iter().flat_map(|entry| entry.plugins));

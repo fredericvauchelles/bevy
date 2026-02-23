@@ -1,4 +1,3 @@
-use bevy_app::app_builder::plugin_graph::PluginGraph;
 use bevy_app::{Plugin, PluginDependency, PluginId};
 use bevy_platform::collections::HashSet;
 use std::prelude::rust_2015::{Box, Vec};
