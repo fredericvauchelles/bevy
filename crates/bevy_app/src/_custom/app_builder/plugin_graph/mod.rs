@@ -53,7 +53,6 @@ impl PluginGraph {
         for plugin in plugins {
             let id = plugin.id();
             if self.id2node.contains_key(&id) {
-                error!("Tried to overwrite an existing plugin: {id}.Skipping adding plugin");
                 continue;
             }
 
