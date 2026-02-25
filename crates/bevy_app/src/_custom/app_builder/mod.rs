@@ -155,8 +155,6 @@ impl AppBuilder {
         let plugin_group = self.plugin_graph.try_into_plugin_group_builder()?;
 
         plugin_group.finish(&mut app);
-        app.finish();
-        app.cleanup();
 
         Ok(runner(app))
     }
