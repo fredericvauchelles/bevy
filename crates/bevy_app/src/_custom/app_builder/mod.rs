@@ -100,12 +100,24 @@ impl AppBuilder {
     }
 
     /// get a plugin
-    pub fn get_plugin<P: Plugin>(&self, id: impl Borrow<PluginId>) -> Result<&P, GetPluginError> {
-        self.plugin_graph.get_plugin::<P>(id.borrow())
+    pub fn get_plugin<P: Plugin>(&self) -> Result<&P, GetPluginError> {
+        self.plugin_graph.get_plugin::<P>(&PluginId::of::<P>())
     }
 
     /// get a plugin
     pub fn get_plugin_mut<P: Plugin>(
+        &mut self,
+    ) -> Result<&mut P, GetPluginError> {
+        self.plugin_graph.get_plugin_mut::<P>(&PluginId::of::<P>())
+    }
+
+    /// get a plugin
+    pub fn get_plugin_with_id<P: Plugin>(&self, id: impl Borrow<PluginId>) -> Result<&P, GetPluginError> {
+        self.plugin_graph.get_plugin::<P>(id.borrow())
+    }
+
+    /// get a plugin
+    pub fn get_plugin_mut_with_id<P: Plugin>(
         &mut self,
         id: impl Borrow<PluginId>,
     ) -> Result<&mut P, GetPluginError> {
