@@ -41,8 +41,13 @@ impl AppBuilder {
     ///
     /// You can use it for existing plugin group that do not use the dependency system
     /// but are in a manually defined order
-    pub fn add_plugins_as_alias<M>(&mut self, alias: impl Into<PluginId>, plugins: impl Plugins<M>) -> &mut Self {
-        self.plugin_graph.add_plugins_as_alias(alias.into(), plugins);
+    pub fn add_plugins_as_alias<M>(
+        &mut self,
+        alias: impl Into<PluginId>,
+        plugins: impl Plugins<M>,
+    ) -> &mut Self {
+        self.plugin_graph
+            .add_plugins_as_alias(alias.into(), plugins);
         self
     }
 
@@ -105,14 +110,15 @@ impl AppBuilder {
     }
 
     /// get a plugin
-    pub fn get_plugin_mut<P: Plugin>(
-        &mut self,
-    ) -> Result<&mut P, GetPluginError> {
+    pub fn get_plugin_mut<P: Plugin>(&mut self) -> Result<&mut P, GetPluginError> {
         self.plugin_graph.get_plugin_mut::<P>(&PluginId::of::<P>())
     }
 
     /// get a plugin
-    pub fn get_plugin_with_id<P: Plugin>(&self, id: impl Borrow<PluginId>) -> Result<&P, GetPluginError> {
+    pub fn get_plugin_with_id<P: Plugin>(
+        &self,
+        id: impl Borrow<PluginId>,
+    ) -> Result<&P, GetPluginError> {
         self.plugin_graph.get_plugin::<P>(id.borrow())
     }
 
@@ -164,9 +170,10 @@ impl AppBuilder {
         self.pre_build_recursive();
 
         let mut app = App::new();
-        let plugin_group = self.plugin_graph.try_into_plugin_group_builder()?;
-
-        plugin_group.finish(&mut app);
+        let plugin_group = self.plugin_graph.try_into_plugin_vec()?;
+        for plugin in plugin_group {
+            app.add_boxed_plugin(plugin)?;
+        }
 
         Ok(runner(app))
     }
@@ -179,7 +186,12 @@ impl AppBuilder {
                 .iter_plugins()
                 .flat_map(|p| p.plugins())
                 .filter(|p| !pre_built_plugins.contains(&p.id()))
-                .flat_map(|p| p.deref().pre_build().into_iter().map(|pre_build| (p.id(), pre_build)))
+                .flat_map(|p| {
+                    p.deref()
+                        .pre_build()
+                        .into_iter()
+                        .map(|pre_build| (p.id(), pre_build))
+                })
                 .collect::<Vec<_>>();
 
             if pre_builds.is_empty() {
@@ -213,14 +225,18 @@ mod tests {
     impl Plugin for PluginA {
         fn build(&self, _: &mut App) {}
         fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-            Some(Box::new(|app| { app.add_plugins(PluginB); }))
+            Some(Box::new(|app| {
+                app.add_plugins(PluginB);
+            }))
         }
     }
     struct PluginB;
     impl Plugin for PluginB {
         fn build(&self, _: &mut App) {}
         fn pre_build(&self) -> Option<Box<dyn FnOnce(&mut AppBuilder)>> {
-            Some(Box::new(|app| { app.add_plugins(PluginC); }))
+            Some(Box::new(|app| {
+                app.add_plugins(PluginC);
+            }))
         }
     }
     struct PluginC;
@@ -234,9 +250,27 @@ mod tests {
         app.add_plugins(PluginA);
 
         let pre_built = app.pre_build_recursive();
-        let plugin_ids = app.plugin_graph.iter_plugins().flat_map(|p| p.plugins()).map(|entry| entry.deref().id()).collect::<HashSet<_>>();
+        let plugin_ids = app
+            .plugin_graph
+            .iter_plugins()
+            .flat_map(|p| p.plugins())
+            .map(|entry| entry.deref().id())
+            .collect::<HashSet<_>>();
 
-        assert_eq!(pre_built, vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>()].into_iter().collect());
-        assert!(plugin_ids.is_superset(&vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()].into_iter().collect()));
+        assert_eq!(
+            pre_built,
+            vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>()]
+                .into_iter()
+                .collect()
+        );
+        assert!(plugin_ids.is_superset(
+            &vec![
+                PluginId::of::<PluginA>(),
+                PluginId::of::<PluginB>(),
+                PluginId::of::<PluginC>()
+            ]
+            .into_iter()
+            .collect()
+        ));
     }
 }

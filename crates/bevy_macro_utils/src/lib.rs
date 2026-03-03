@@ -12,6 +12,7 @@ extern crate proc_macro;
 
 mod attrs;
 mod bevy_manifest;
+mod bevy_manifest_config;
 pub mod fq_std;
 mod label;
 mod member;
@@ -19,7 +20,6 @@ mod parser;
 mod result_sifter;
 mod shape;
 mod symbol;
-
 pub use attrs::*;
 pub use bevy_manifest::*;
 pub use label::*;

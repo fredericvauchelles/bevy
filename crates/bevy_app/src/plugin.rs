@@ -165,8 +165,6 @@ impl Plugin for PlaceholderPlugin {
 /// This is implemented for all types which implement [`Plugin`],
 /// [`PluginGroup`](super::PluginGroup), and tuples over [`Plugins`].
 pub trait Plugins<Marker>: sealed::Plugins<Marker> {
-    /// Returns the [`PluginId`] for each plugin in this set
-    fn plugin_ids(&self) -> alloc::vec::Vec<PluginId>;
     /// Transforms this plugin set into a vec of boxed plugins
     fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>>;
 }
@@ -175,9 +173,6 @@ impl<Marker, T> Plugins<Marker> for T
 where
     T: sealed::Plugins<Marker>,
 {
-    fn plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
-        <Self as sealed::Plugins<Marker>>::sealed_plugin_ids(self)
-    }
     fn into_boxed_vec(self) -> alloc::vec::Vec<alloc::boxed::Box<dyn Plugin>> {
         <Self as sealed::Plugins<Marker>>::sealed_into_boxed_vec(self)
     }
@@ -186,12 +181,10 @@ where
 mod sealed {
     use crate::{App, AppError, Plugin, PluginGroup};
     use alloc::boxed::Box;
-    use bevy_app::PluginId;
     use variadics_please::all_tuples;
 
     pub trait Plugins<Marker> {
         fn add_to_app(self, app: &mut App);
-        fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId>;
         fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>>;
     }
 
@@ -210,9 +203,6 @@ mod sealed {
                 )
             }
         }
-        fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
-            alloc::vec![PluginId::of::<P>()]
-        }
         fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
             alloc::vec![Box::new(self)]
         }
@@ -224,13 +214,6 @@ mod sealed {
             self.build().finish(app);
         }
 
-        fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
-            self.clone()
-                .sealed_into_boxed_vec()
-                .into_iter()
-                .map(|p| p.id())
-                .collect()
-        }
         fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
             self.build().into()
         }
@@ -255,12 +238,6 @@ mod sealed {
                     $($plugins_lo.add_to_app(app);)*
                 }
 
-                fn sealed_plugin_ids(&self) -> alloc::vec::Vec<PluginId> {
-                    let ($($plugins_lo,)*) = self;
-                    let values = core::iter::empty();
-                    $(let values = values.chain($plugins_lo.sealed_plugin_ids().into_iter());)*
-                    values.collect()
-                }
                 fn sealed_into_boxed_vec(self) -> alloc::vec::Vec<Box<dyn Plugin>> {
                     let ($($plugins_lo,)*) = self;
                     let values = core::iter::empty();
@@ -284,9 +261,8 @@ mod sealed {
 
 #[cfg(test)]
 mod tests {
-    use super::{Plugin, PluginDependency, PluginId, Plugins};
+    use super::{Plugin, PluginDependency};
     use crate::plugin_deps;
-    use alloc::vec;
     use bevy_app::App;
 
     #[derive(Default)]
@@ -303,16 +279,5 @@ mod tests {
     struct EmptyPlugin3;
     impl Plugin for EmptyPlugin3 {
         fn build(&self, _app: &mut App) {}
-    }
-
-    #[test]
-    fn plugin_ids() {
-        assert_eq!(
-            vec![
-                PluginId::of::<EmptyPlugin2>(),
-                PluginId::of::<EmptyPlugin3>()
-            ],
-            (EmptyPlugin2::default(), EmptyPlugin3::default()).plugin_ids()
-        );
     }
 }

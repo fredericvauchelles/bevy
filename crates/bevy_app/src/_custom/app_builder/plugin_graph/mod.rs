@@ -14,8 +14,8 @@ pub use patch::PluginDependencyPatch;
 use petgraph::prelude::*;
 use thiserror::Error;
 
-mod patch;
 mod entry;
+mod patch;
 
 #[derive(Default)]
 pub struct PluginGraph {
@@ -70,17 +70,28 @@ impl PluginGraph {
     ///
     /// You can use it for existing plugin group that do not use the dependency system
     /// but are in a manually defined order
-    pub fn add_plugins_as_alias<M>(&mut self, alias: PluginId, plugins: impl Plugins<M>) -> &mut Self {
+    pub fn add_plugins_as_alias<M>(
+        &mut self,
+        alias: PluginId,
+        plugins: impl Plugins<M>,
+    ) -> &mut Self {
         let plugins = plugins.into_boxed_vec();
         if self.id2node.contains_key(&alias) {
-            error!("Tried to overwrite an existing plugin: {alias}.\
+            error!(
+                "Tried to overwrite an existing plugin: {alias}.\
              Skipping adding plugins ({}) as alias {alias}",
-                plugins.iter().map(|p|p.id().to_string()).collect::<Vec<_>>().join(","));
+                plugins
+                    .iter()
+                    .map(|p| p.id().to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            );
             return self;
         }
 
         let node = self.graph.add_node(alias.clone());
-        self.aliases.extend(plugins.iter().map(|p| (p.id(), alias.clone())));
+        self.aliases
+            .extend(plugins.iter().map(|p| (p.id(), alias.clone())));
         self.node2entry.insert(node, PluginEntry::new(plugins));
         self.id2node.insert(alias.clone(), node);
         self.node2id.insert(node, alias);
@@ -97,19 +108,28 @@ impl PluginGraph {
             let id = plugin.id();
 
             // Look for node with this id or look for aliases of this id
-            if let Some(node) = self.id2node.get(&id)
+            if let Some(node) = self
+                .id2node
+                .get(&id)
                 .or_else(|| self.aliases.get(&id).and_then(|id| self.id2node.get(id)))
             {
                 let Some(entry) = self.node2entry.get_mut(node) else {
                     unreachable!()
                 };
-                if let Some(existing_plugin) = entry.plugins.iter_mut().find(|p| (&***p).type_id() == plugin.deref().type_id()) {
+                if let Some(existing_plugin) = entry
+                    .plugins
+                    .iter_mut()
+                    .find(|p| (&***p).type_id() == plugin.deref().type_id())
+                {
                     *existing_plugin = plugin;
                 } else {
-                    log::error!("Tried to update Plugin id {id} (type: {}) with another \
+                    log::error!(
+                        "Tried to update Plugin id {id} (type: {}) with another \
                         plugin of a different type. (new type: {}). This is forbidden",
-                        entry.plugins().first().unwrap().name(), plugin.name());
-                    continue
+                        entry.plugins().first().unwrap().name(),
+                        plugin.name()
+                    );
+                    continue;
                 }
             } else {
                 let node = self.graph.add_node(id.clone());
@@ -128,9 +148,16 @@ impl PluginGraph {
         self
     }
 
-    fn update_plugin_dependencies(&mut self, id: &PluginId, patches: impl IntoIterator<Item=UpdatePluginDependency>) -> &mut Self {
+    fn update_plugin_dependencies(
+        &mut self,
+        id: &PluginId,
+        patches: impl IntoIterator<Item = UpdatePluginDependency>,
+    ) -> &mut Self {
         if let Some(n) = self.id2node.get(id) {
-            let entry = self.node2entry.get_mut(n).expect("A node entry must have the corresponding plugin entry");
+            let entry = self
+                .node2entry
+                .get_mut(n)
+                .expect("A node entry must have the corresponding plugin entry");
             for patch in patches {
                 match patch {
                     UpdatePluginDependency::AddBefore(id) => {
@@ -160,16 +187,22 @@ impl PluginGraph {
     }
 
     pub fn get_plugin<P: Plugin>(&self, id: &PluginId) -> Result<&P, GetPluginError> {
-        let Some(node) = self.id2node.get(id)
-            .or_else(|| self.aliases.get(id).and_then(|id| self.id2node.get(id))) else {
+        let Some(node) = self
+            .id2node
+            .get(id)
+            .or_else(|| self.aliases.get(id).and_then(|id| self.id2node.get(id)))
+        else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
         let Some(entry) = self.node2entry.get(node) else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
-        let Some(plugin) = entry.plugins.iter()
+        let Some(plugin) = entry
+            .plugins
+            .iter()
             .find(|p| (&***p).type_id() == TypeId::of::<P>())
-            .and_then(|p| p.downcast_ref::<P>()) else {
+            .and_then(|p| p.downcast_ref::<P>())
+        else {
             return Err(GetPluginError::InvalidType(
                 id.clone(),
                 core::any::type_name::<P>(),
@@ -179,17 +212,22 @@ impl PluginGraph {
     }
 
     pub fn get_plugin_mut<P: Plugin>(&mut self, id: &PluginId) -> Result<&mut P, GetPluginError> {
-        let Some(node) = self.id2node.get(id)
-            .or_else(|| self.aliases.get(id).and_then(|id| self.id2node.get(id)))else {
+        let Some(node) = self
+            .id2node
+            .get(id)
+            .or_else(|| self.aliases.get(id).and_then(|id| self.id2node.get(id)))
+        else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
         let Some(entry) = self.node2entry.get_mut(node) else {
             return Err(GetPluginError::PluginNotAdded(id.clone()));
         };
-        let Some(plugin) = entry.plugins
+        let Some(plugin) = entry
+            .plugins
             .iter_mut()
             .find(|p| (&***p).type_id() == TypeId::of::<P>())
-            .and_then(|p| p.downcast_mut::<P>()) else {
+            .and_then(|p| p.downcast_mut::<P>())
+        else {
             return Err(GetPluginError::InvalidType(
                 id.clone(),
                 core::any::type_name::<P>(),
@@ -198,11 +236,25 @@ impl PluginGraph {
         Ok(plugin)
     }
 
-    pub fn try_into_plugin_group_builder(self) -> Result<PluginGroupBuilder, BevyError> {
-        self.try_into()
+    pub fn try_into_plugin_vec(self) -> Result<Vec<Box<dyn Plugin>>, PluginGraphBuildError> {
+        let sorted = self.try_into_sorted_plugins()?;
+
+        {
+            use bevy_platform::prelude::*;
+            log::trace!(
+                "Sorted plugins:\n\n[\n{}\n]",
+                sorted
+                    .iter()
+                    .flat_map(PluginEntry::plugins)
+                    .map(|n| format!("\"{}\"", n.deref().id()))
+                    .collect::<Vec<_>>()
+                    .join(",\n")
+            );
+        }
+        Ok(sorted.into_iter().flat_map(|entry| entry.plugins).collect())
     }
 
-    pub fn iter_plugins(&self) -> impl Iterator<Item=&PluginEntry> {
+    pub fn iter_plugins(&self) -> impl Iterator<Item = &PluginEntry> {
         self.node2entry.values()
     }
 
@@ -264,13 +316,15 @@ impl PluginGraph {
     fn try_into_sorted_plugins(self) -> Result<Vec<PluginEntry>, PluginGraphBuildError> {
         let mut value = self.add_plugin_edges()?;
 
-        let sorted = petgraph::algo::toposort(&value.graph, None).map_err(|err| {
-            let cycle = find_cycle(err.node_id(), &value.graph);
-            let cycle = cycle.into_iter().map(|n| value.node2id.get(&n).cloned().unwrap()).collect();
-            PluginGraphBuildError::CircularDependency(
-                cycle
-            )
-        })?
+        let sorted = petgraph::algo::toposort(&value.graph, None)
+            .map_err(|err| {
+                let cycle = find_cycle(err.node_id(), &value.graph);
+                let cycle = cycle
+                    .into_iter()
+                    .map(|n| value.node2id.get(&n).cloned().unwrap())
+                    .collect();
+                PluginGraphBuildError::CircularDependency(cycle)
+            })?
             .into_iter()
             .map(|n| value.node2entry.remove(&n).unwrap());
 
@@ -279,8 +333,8 @@ impl PluginGraph {
 }
 
 fn find_cycle(node_in_cycle: NodeIndex, graph: &Graph<PluginId, ()>) -> Vec<NodeIndex> {
-    use bevy_platform::prelude::*;
     use bevy_platform::collections::*;
+    use bevy_platform::prelude::*;
     use bevy_platform::sync::*;
 
     struct GraphNode {
@@ -289,10 +343,7 @@ fn find_cycle(node_in_cycle: NodeIndex, graph: &Graph<PluginId, ()>) -> Vec<Node
     }
     impl GraphNode {
         fn new(index: NodeIndex, parent: Option<Arc<RwLock<GraphNode>>>) -> Self {
-            Self {
-                index,
-                parent,
-            }
+            Self { index, parent }
         }
 
         fn add_child(this: &Arc<RwLock<GraphNode>>, child: NodeIndex) -> Arc<RwLock<GraphNode>> {
@@ -311,9 +362,20 @@ fn find_cycle(node_in_cycle: NodeIndex, graph: &Graph<PluginId, ()>) -> Vec<Node
             if child.target() == node_in_cycle {
                 let mut nodes = vec![node_in_cycle, current_node];
                 let mut current_node = next;
-                while let Some(parent) = { current_node.read().unwrap_or_else(PoisonError::into_inner).parent.clone() } {
+                while let Some(parent) = {
+                    current_node
+                        .read()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .parent
+                        .clone()
+                } {
                     current_node = parent;
-                    nodes.push(current_node.read().unwrap_or_else(PoisonError::into_inner).index);
+                    nodes.push(
+                        current_node
+                            .read()
+                            .unwrap_or_else(PoisonError::into_inner)
+                            .index,
+                    );
                 }
                 return nodes;
             }
@@ -334,22 +396,6 @@ pub enum PluginGraphBuildError {
     #[error("Circular dependency detected with plugin: '{}'", .0.iter().map(alloc::string::ToString::to_string).collect::<Vec<_>>().join(" -> ")
     )]
     CircularDependency(Vec<PluginId>),
-}
-
-impl TryFrom<PluginGraph> for PluginGroupBuilder {
-    type Error = BevyError;
-
-    fn try_from(value: PluginGraph) -> Result<Self, Self::Error> {
-        let sorted = value.try_into_sorted_plugins()?;
-
-        {
-            use bevy_platform::prelude::*;
-            log::trace!("Sorted plugins:\n\n[\n{}\n]", sorted.iter().flat_map(PluginEntry::plugins).map(|n| format!("\"{}\"", n.deref().id())).collect::<Vec<_>>().join(",\n"));
-        }
-        let mut result = PluginGraphPluginGroup.build();
-        result.extend(sorted.into_iter().flat_map(|entry| entry.plugins));
-        Ok(result)
-    }
 }
 
 #[cfg(test)]
@@ -383,9 +429,20 @@ mod tests {
             let mut plugin_graph = PluginGraph::default();
             plugin_graph.add_plugins(plugins);
             let plugins = plugin_graph.try_into_sorted_plugins().unwrap();
-            let plugin_ids = plugins.iter().flat_map(|e| e.plugins()).map(|p| p.deref().id()).collect::<Vec<_>>();
+            let plugin_ids = plugins
+                .iter()
+                .flat_map(|e| e.plugins())
+                .map(|p| p.deref().id())
+                .collect::<Vec<_>>();
 
-            assert_eq!(vec![PluginId::of::<PluginA>(), PluginId::of::<PluginB>(), PluginId::of::<PluginC>()], plugin_ids);
+            assert_eq!(
+                vec![
+                    PluginId::of::<PluginA>(),
+                    PluginId::of::<PluginB>(),
+                    PluginId::of::<PluginC>()
+                ],
+                plugin_ids
+            );
         }
 
         test((PluginA, PluginB, PluginC));
@@ -402,26 +459,34 @@ mod tests {
             let mut plugin_graph = PluginGraph::default();
             plugin_graph.add_plugins(plugins);
 
-            plugin_graph.patch_plugin_dependencies(
-                &plugin_deps_patch! {
-                    PluginA: {
-                        build_before: [-PluginB],
-                        build_after: [+PluginC],
-                    },
-                    PluginB: {
-                        build_before: [+PluginC]
-                    },
-                    PluginC: {
-                        build_after: [-PluginB]
-                    },
-                }
-            );
-
+            plugin_graph.patch_plugin_dependencies(&plugin_deps_patch! {
+                PluginA: {
+                    build_before: [-PluginB],
+                    build_after: [+PluginC],
+                },
+                PluginB: {
+                    build_before: [+PluginC]
+                },
+                PluginC: {
+                    build_after: [-PluginB]
+                },
+            });
 
             let plugins = plugin_graph.try_into_sorted_plugins().unwrap();
-            let plugin_ids = plugins.iter().flat_map(|e| e.plugins()).map(|p| p.deref().id()).collect::<Vec<_>>();
+            let plugin_ids = plugins
+                .iter()
+                .flat_map(|e| e.plugins())
+                .map(|p| p.deref().id())
+                .collect::<Vec<_>>();
 
-            assert_eq!(vec![PluginId::of::<PluginB>(), PluginId::of::<PluginC>(), PluginId::of::<PluginA>()], plugin_ids);
+            assert_eq!(
+                vec![
+                    PluginId::of::<PluginB>(),
+                    PluginId::of::<PluginC>(),
+                    PluginId::of::<PluginA>()
+                ],
+                plugin_ids
+            );
         }
 
         test((PluginA, PluginB, PluginC));

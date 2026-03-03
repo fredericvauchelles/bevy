@@ -553,23 +553,6 @@ impl From<PluginGroupBuilder> for Vec<Box<dyn Plugin>> {
     }
 }
 
-impl Extend<Box<dyn Plugin>> for PluginGroupBuilder {
-    fn extend<T: IntoIterator<Item = Box<dyn Plugin>>>(&mut self, iter: T) {
-        for plugin in iter {
-            let target_index = self.order.len();
-            self.order.push((*plugin).type_id());
-            self.upsert_plugin_entry_state(
-                (*plugin).type_id(),
-                PluginEntry {
-                    plugin,
-                    enabled: true,
-                },
-                target_index,
-            );
-        }
-    }
-}
-
 /// A plugin group which doesn't do anything. Useful for examples:
 /// ```
 /// # use bevy_app::prelude::*;

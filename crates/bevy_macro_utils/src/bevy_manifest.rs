@@ -1,5 +1,7 @@
 extern crate proc_macro;
 
+use crate::bevy_manifest_config::BevyManifestConfig;
+use alloc::borrow::Cow;
 use alloc::collections::BTreeMap;
 use proc_macro::TokenStream;
 use std::sync::{PoisonError, RwLock};
@@ -15,9 +17,8 @@ use toml_edit::{Document, Item};
 pub struct BevyManifest {
     manifest: Document<Box<str>>,
     modified_time: SystemTime,
+    config: BevyManifestConfig,
 }
-
-const BEVY: &str = "bevy";
 
 impl BevyManifest {
     /// Calls `f` with a global shared instance of the [`BevyManifest`] struct.
@@ -39,6 +40,7 @@ impl BevyManifest {
         let manifest = BevyManifest {
             manifest: Self::read_manifest(&manifest_path),
             modified_time,
+            config: BevyManifestConfig::get(),
         };
 
         let key = manifest_path.clone();
@@ -89,15 +91,15 @@ impl BevyManifest {
     pub fn maybe_get_path_any(
         &self,
         name: &str,
-        reexports: &'static [&'static str],
-        prefixes: &'static [&'static str],
+        reexports: &[Cow<'static, str>],
+        prefixes: &[Cow<'static, str>],
     ) -> Option<syn::Path> {
         let find_in_deps = |deps: &Item| -> Option<syn::Path> {
             let package = if deps.get(name).is_some() {
                 return Some(Self::parse_str(name));
             } else if let Some(reexports) = reexports
                 .iter()
-                .find(|reexport| self.manifest.get(reexport).is_some())
+                .find(|reexport| deps.get(&***reexport).is_some())
             {
                 reexports
             } else {
@@ -111,7 +113,7 @@ impl BevyManifest {
 
             let mut path = Self::parse_str::<syn::Path>(&format!("::{package}"));
             for prefix in prefixes {
-                if let Some(module) = name.strip_prefix(prefix) {
+                if let Some(module) = name.strip_prefix(&**prefix) {
                     path.segments.push(Self::parse_str(module));
                     break;
                 }
@@ -129,7 +131,7 @@ impl BevyManifest {
     /// Attempt to retrieve the [path](syn::Path) of a particular package in
     /// the [manifest](BevyManifest) by [name](str).
     pub fn maybe_get_path(&self, name: &str) -> Option<syn::Path> {
-        self.maybe_get_path_any(name, &[BEVY], &["bevy_"])
+        self.maybe_get_path_any(name, &*self.config.reexports, &*self.config.prefixes)
     }
 
     /// Attempt to parse the provided [path](str) as a [syntax tree node](syn::parse::Parse)
@@ -147,8 +149,8 @@ impl BevyManifest {
     pub fn get_path_any(
         &self,
         name: &str,
-        reexports: &'static [&'static str],
-        prefixes: &'static [&'static str],
+        reexports: &[Cow<'static, str>],
+        prefixes: &[Cow<'static, str>],
     ) -> syn::Path {
         self.maybe_get_path_any(name, reexports, prefixes)
             .unwrap_or_else(|| Self::parse_str(name))
@@ -156,7 +158,7 @@ impl BevyManifest {
 
     /// Execute the getter function on the manifest
     pub fn get_manifest<O>(&self, getter: impl Fn(&toml_edit::Table) -> O) -> O {
-        getter(&*self.manifest)
+        getter(&self.manifest)
     }
 
     /// Attempt to parse provided [path](str) as a [syntax tree node](syn::parse::Parse).
