@@ -28,3 +28,5 @@ pub use parser::*;
 pub use result_sifter::*;
 pub use shape::*;
 pub use symbol::*;
+
+pub use toml_edit;

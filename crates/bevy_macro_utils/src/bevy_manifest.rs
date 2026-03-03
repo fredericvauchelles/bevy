@@ -86,12 +86,20 @@ impl BevyManifest {
 
     /// Attempt to retrieve the [path](syn::Path) of a particular package in
     /// the [manifest](BevyManifest) by [name](str).
-    pub fn maybe_get_path(&self, name: &str) -> Option<syn::Path> {
+    pub fn maybe_get_path_any(
+        &self,
+        name: &str,
+        reexports: &'static [&'static str],
+        prefixes: &'static [&'static str],
+    ) -> Option<syn::Path> {
         let find_in_deps = |deps: &Item| -> Option<syn::Path> {
             let package = if deps.get(name).is_some() {
                 return Some(Self::parse_str(name));
-            } else if deps.get(BEVY).is_some() {
-                BEVY
+            } else if let Some(reexports) = reexports
+                .iter()
+                .find(|reexport| self.manifest.get(reexport).is_some())
+            {
+                reexports
             } else {
                 // Note: to support bevy crate aliases, we could do scanning here to find a crate with a "package" name that
                 // matches our request, but that would then mean we are scanning every dependency (and dev dependency) for every
@@ -102,8 +110,11 @@ impl BevyManifest {
             };
 
             let mut path = Self::parse_str::<syn::Path>(&format!("::{package}"));
-            if let Some(module) = name.strip_prefix("bevy_") {
-                path.segments.push(Self::parse_str(module));
+            for prefix in prefixes {
+                if let Some(module) = name.strip_prefix(prefix) {
+                    path.segments.push(Self::parse_str(module));
+                    break;
+                }
             }
             Some(path)
         };
@@ -115,6 +126,12 @@ impl BevyManifest {
             .or_else(|| deps_dev.and_then(find_in_deps))
     }
 
+    /// Attempt to retrieve the [path](syn::Path) of a particular package in
+    /// the [manifest](BevyManifest) by [name](str).
+    pub fn maybe_get_path(&self, name: &str) -> Option<syn::Path> {
+        self.maybe_get_path_any(name, &[BEVY], &["bevy_"])
+    }
+
     /// Attempt to parse the provided [path](str) as a [syntax tree node](syn::parse::Parse)
     pub fn try_parse_str<T: syn::parse::Parse>(path: &str) -> Option<T> {
         syn::parse(path.parse::<TokenStream>().ok()?).ok()
@@ -124,6 +141,22 @@ impl BevyManifest {
     pub fn get_path(&self, name: &str) -> syn::Path {
         self.maybe_get_path(name)
             .unwrap_or_else(|| Self::parse_str(name))
+    }
+
+    /// Returns the path for the crate with the given name.
+    pub fn get_path_any(
+        &self,
+        name: &str,
+        reexports: &'static [&'static str],
+        prefixes: &'static [&'static str],
+    ) -> syn::Path {
+        self.maybe_get_path_any(name, reexports, prefixes)
+            .unwrap_or_else(|| Self::parse_str(name))
+    }
+
+    /// Execute the getter function on the manifest
+    pub fn get_manifest<O>(&self, getter: impl Fn(&toml_edit::Table) -> O) -> O {
+        getter(&*self.manifest)
     }
 
     /// Attempt to parse provided [path](str) as a [syntax tree node](syn::parse::Parse).
