@@ -40,13 +40,6 @@ pub enum UpdatePluginDependency {
     RemoveAfter(PluginDependency),
 }
 
-struct PluginGraphPluginGroup;
-impl PluginGroup for PluginGraphPluginGroup {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-    }
-}
-
 impl PluginGraph {
     pub fn add_plugins<M>(&mut self, plugins: impl Plugins<M>) -> &mut Self {
         let plugins = plugins.into_boxed_vec();
