@@ -131,7 +131,7 @@ impl BevyManifest {
     /// Attempt to retrieve the [path](syn::Path) of a particular package in
     /// the [manifest](BevyManifest) by [name](str).
     pub fn maybe_get_path(&self, name: &str) -> Option<syn::Path> {
-        self.maybe_get_path_any(name, &*self.config.reexports, &*self.config.prefixes)
+        self.maybe_get_path_any(name, &self.config.reexports, &self.config.prefixes)
     }
 
     /// Attempt to parse the provided [path](str) as a [syntax tree node](syn::parse::Parse)
