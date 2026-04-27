@@ -33,6 +33,24 @@ impl AppBuilder {
         self
     }
 
+    /// Adds a plugin only if it is missing
+    pub fn add_missing_plugin_with<P: Plugin>(&mut self, with: impl FnOnce() -> P) -> &mut Self {
+        if !self.contains_plugin::<P>() {
+            self.add_plugins(with());
+        }
+        self
+    }
+
+    /// Adds a plugin only if it is missing
+    pub fn add_missing_plugin_default<P: Plugin + Default>(&mut self) -> &mut Self {
+        self.add_missing_plugin_with(P::default)
+    }
+
+    /// Adds a plugin only if it is missing
+    pub fn add_missing_plugin<P: Plugin>(&mut self, plugin: P) -> &mut Self {
+        self.add_missing_plugin_with(move || plugin)
+    }
+
     /// Add plugins to the graph as a single node with id `alias`
     ///
     /// If a plugin with the same [`PluginId`] is already added, then it will be overwritten.
@@ -62,7 +80,7 @@ impl AppBuilder {
         struct FnPlugin<F>(F, Vec<PluginDependency>, Vec<PluginDependency>, PluginId);
         impl<F: 'static + Sync + Send + Fn(&mut App)> Plugin for FnPlugin<F> {
             fn build(&self, app: &mut App) {
-                self.0(app)
+                self.0(app);
             }
             fn id(&self) -> PluginId {
                 self.3.clone()
